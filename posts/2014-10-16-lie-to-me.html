@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <meta name="author" content="Anton Dubovik">
+  <meta name="keywords" content="dubovik, haskell, programming, anton dubovik">
+  <meta name="description" content="Home page of Anton Dubovik">
+  <meta name="generator" content="hakyll">
+
+  <link rel="stylesheet" href="../static/main.css" />
+  <link rel="stylesheet" href="../static/syntax.css" />
+
+  <!-- Google webfonts -->
+  <link href="http://fonts.googleapis.com/css?family=Droid+Sans+Mono|Ubuntu&subset=latin,cyrillic" rel="stylesheet" type="text/css">
+
+  <!--[if IE]>
+  <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.min.js"></script>
+
+  <title>Lie to me</title>
+</head>
+
+<body>
+
+  <script type="text/javascript">
+    var disqus_developer = 1;
+</script>
+
+<article>
+
+<h1 class="post_title">Lie to me</h1>
+<div class="post_date">posted on Oct 16, 2014</div>
+
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="ot">{-# language RecordWildCards #-}</span></code></pre>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">module</span> <span class="dt">LieToMe</span> <span class="kw">where</span></code></pre>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Control.Monad</span>
+<span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Data.List</span>
+<span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Text.Printf</span></code></pre>
+<p>Недавно услышал такую итересную логическую задачу:</p>
+<p>Есть три компьютера - A, B и С. Компьютеру можно задавать вопросы, на которые он отвечает “да” или “нет”. Известно, что 1. Компьютер A всегда говорит правду. Т.е. если спросить у него “Верно ли, что 2*2 равно 4?“, от ответит”да“. 2. Компьютер B всегда лжет. Т.е. на тот же вопрос он ответит”нет“. 3. Компьютер C может сказать как ложь, так и правду. Он отвечает случайным образом, независимо от заданного вопроса, а значит, невозможно заранее предсказать, что он ответит.</p>
+<p>Перед вами стоят три компьютера - A, B и C. Вам неизвестно, кто из них кто. Единственное, чем они отличаются - это номера на корпусе 1, 2 и 3. Нужно выбрать из этих компьютеров либо А, либо B, задав одному компьютеру всего один вопрос. При этом компьютеры осведомлены о том, кто есть кто среди них троих.</p>
+<p>Какой вопрос нужно задать и как выбрать компьютер после этого?</p>
+<p>Откиньтесь на спинку кресла и немного поразмышляйте над задачей.</p>
+<p>…</p>
+<p>Сдаётесь? Ок, мне она тоже не далась.</p>
+<p>На первый взгляд, это одна их тех логических задач, для решения которой требуется инсайт, некоторая догадка, которую можно очень долго искать, но так и не найти. Кому-то она придёт в голову почти сразу, кто-то так никогда и не додумается.</p>
+<p>Но неизменно, когда ответ озвучен, те, кто не решил задачу, делают круглые глаза и задаются вопросом “Как вообще к этому решению можно было прийти?”.</p>
+<p>Однако, для этой задачи достаточно перебрать всё множество вопросов (а оно конечно) вместе со стратегией выбора компьютера и отфильтровать те решения, которые позволяют гарантированно выбрать компьютер А или В. Полученные механических путем решения будет ничем не хуже данных в озарении.</p>
+<p>С чего же начать поиск решения?</p>
+<p>Во-первых, кому его задать? Без потери общности положим, что вопрос всегда задаётся первому компьютеру.</p>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">ComputerKind</span> <span class="fu">=</span> <span class="dt">A</span> <span class="fu">|</span> <span class="dt">B</span> <span class="fu">|</span> <span class="dt">C</span> <span class="kw">deriving</span> (<span class="dt">Show</span>,<span class="dt">Eq</span>)
+<span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">ComputerId</span> <span class="fu">=</span> <span class="dt">I1</span> <span class="fu">|</span> <span class="dt">I2</span> <span class="fu">|</span> <span class="dt">I3</span> <span class="kw">deriving</span> (<span class="dt">Enum</span>,<span class="dt">Bounded</span>)</code></pre>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Show</span> <span class="dt">ComputerId</span> <span class="kw">where</span>
+<span class="ot">&gt;</span>   show <span class="dt">I1</span> <span class="fu">=</span> <span class="st">&quot;1&quot;</span>
+<span class="ot">&gt;</span>   show <span class="dt">I2</span> <span class="fu">=</span> <span class="st">&quot;2&quot;</span>
+<span class="ot">&gt;</span>   show <span class="dt">I3</span> <span class="fu">=</span> <span class="st">&quot;3&quot;</span></code></pre>
+<p>Во-вторых, какие вопросы имеет смысл задавать? Очевидно, что обойтись вопросом, ответ на который мы знаем сами (например, “2*2 равно 4?“) не удастся. Значит нужно задавать более предметные вопросы, вопросы о состоянии мира, в котором находятся компьютеры. Всё, что они знают - это кто есть кто среди них. Поэтому имеет смысл задавать вопросы типа”Верно ли, что 1ый компьютер - это А, 2ой - С, 3ий - В?“. Кроме того, можно комбинировать в вопросе возможные конфигурации компьютеров через”или“:”Верно ли, что 1-А, 2-С, 3-В или 1-В, 2-С, 3-А?“. Теперь, если мы переберем все возможные подмножества (их 2^(3!)) множества возможных конфигураций (их 3!), то получим все возможные вопросы, которые можно задать компьютерам.</p>
+<p>Итак, вопрос - есть дизъюнкция (Or) конъюнкций (And), где конъюнкты (Is) утверждают, что i-ый компьютер есть на самом деле A, B или C.</p>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">Question</span> <span class="fu">=</span> <span class="dt">Or</span>  <span class="dt">Question</span> <span class="dt">Question</span>
+<span class="ot">&gt;</span>               <span class="fu">|</span> <span class="dt">And</span> <span class="dt">Question</span> <span class="dt">Question</span>
+<span class="ot">&gt;</span>               <span class="fu">|</span> <span class="dt">Is</span> <span class="dt">ComputerId</span> <span class="dt">ComputerKind</span></code></pre>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Show</span> <span class="dt">Question</span> <span class="kw">where</span>
+<span class="ot">&gt;</span>   showsPrec _ (<span class="dt">Is</span> cid kind) <span class="fu">=</span>
+<span class="ot">&gt;</span>     showsPrec <span class="dv">0</span> cid <span class="fu">.</span>
+<span class="ot">&gt;</span>     showString <span class="st">&quot;==&quot;</span> <span class="fu">.</span>
+<span class="ot">&gt;</span>     showsPrec <span class="dv">0</span> kind
+<span class="ot">&gt;</span>   showsPrec _ (<span class="dt">And</span> q1 q2) <span class="fu">=</span>
+<span class="ot">&gt;</span>     showsPrec <span class="dv">3</span> q1 <span class="fu">.</span>
+<span class="ot">&gt;</span>     showString <span class="st">&quot;&amp;&quot;</span> <span class="fu">.</span>
+<span class="ot">&gt;</span>     showsPrec <span class="dv">3</span> q2
+<span class="ot">&gt;</span>   showsPrec p (<span class="dt">Or</span> q1 q2) <span class="fu">=</span> showParen (p <span class="fu">&gt;</span> <span class="dv">2</span>) <span class="fu">$</span>
+<span class="ot">&gt;</span>     showsPrec <span class="dv">2</span> q1 <span class="fu">.</span>
+<span class="ot">&gt;</span>     showString <span class="st">&quot; | &quot;</span> <span class="fu">.</span>
+<span class="ot">&gt;</span>     showsPrec <span class="dv">2</span> q2</code></pre>
+<p>В-третьих, как выбрать компьютер? В зависимости от данного ответа - “да” или “нет”, выбрать один из трех компьютеров. Всего таких стратегий 3*3=9.</p>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">Strategy</span> <span class="fu">=</span> <span class="dt">Strategy</span> {<span class="ot"> ifTrue  ::</span> <span class="dt">ComputerId</span>
+<span class="ot">&gt;</span>                          ,<span class="ot"> ifFalse ::</span> <span class="dt">ComputerId</span>
+<span class="ot">&gt;</span>                          }</code></pre>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Show</span> <span class="dt">Strategy</span> <span class="kw">where</span>
+<span class="ot">&gt;</span>   show <span class="dt">Strategy</span>{<span class="fu">..</span>} <span class="fu">=</span> printf
+<span class="ot">&gt;</span>                         <span class="st">&quot;Yes ? %s : %s&quot;</span>
+<span class="ot">&gt;</span>                         (show ifTrue)
+<span class="ot">&gt;</span>                         (show ifFalse)</code></pre>
+<p>Чтобы перебрать все возможные вопросы, нам понадобится тип, обозначающий конкретную конфигурацию компьютеров.</p>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">World</span> <span class="fu">=</span> <span class="dt">World</span> {<span class="ot"> i1 ::</span> <span class="dt">ComputerKind</span>
+<span class="ot">&gt;</span>                    ,<span class="ot"> i2 ::</span> <span class="dt">ComputerKind</span>
+<span class="ot">&gt;</span>                    ,<span class="ot"> i3 ::</span> <span class="dt">ComputerKind</span>
+<span class="ot">&gt;</span>                    }
+<span class="ot">&gt;</span>   <span class="kw">deriving</span> <span class="dt">Show</span></code></pre>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; worlds ::</span> [<span class="dt">World</span>]
+<span class="ot">&gt;</span> worlds <span class="fu">=</span> map mkWorld <span class="fu">$</span> permutations [<span class="dt">A</span>,<span class="dt">B</span>,<span class="dt">C</span>]
+<span class="ot">&gt;</span>   <span class="kw">where</span>
+<span class="ot">&gt;</span>     mkWorld [i1,i2,i3] <span class="fu">=</span> <span class="dt">World</span>{<span class="fu">..</span>}
+<span class="ot">&gt;</span>     mkWorld _ <span class="fu">=</span> error <span class="st">&quot;Should not happen.&quot;</span></code></pre>
+<p>Тогда из каждого подмножества ‘worlds’ можно сформировать один вопрос, объединяющий конфигурации компьютеров через “или”.</p>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; questions ::</span> [<span class="dt">Question</span>]
+<span class="ot">&gt;</span> questions <span class="fu">=</span>
+<span class="ot">&gt;</span>   map orQuestion <span class="fu">$</span>
+<span class="ot">&gt;</span>   filter (not <span class="fu">.</span> null) <span class="fu">$</span>
+<span class="ot">&gt;</span>   subsequences worldQuestions
+<span class="ot">&gt;</span>   <span class="kw">where</span>
+<span class="ot">&gt;     orQuestion ::</span> [<span class="dt">Question</span>] <span class="ot">-&gt;</span> <span class="dt">Question</span>
+<span class="ot">&gt;</span>     orQuestion <span class="fu">=</span> foldr1 <span class="dt">Or</span>
+<span class="ot">&gt;</span>     
+<span class="ot">&gt;     worldQuestions ::</span> [<span class="dt">Question</span>]
+<span class="ot">&gt;</span>     worldQuestions <span class="fu">=</span> map worldToQuestion worlds
+<span class="ot">&gt;</span>     
+<span class="ot">&gt;     worldToQuestion ::</span> <span class="dt">World</span> <span class="ot">-&gt;</span> <span class="dt">Question</span>
+<span class="ot">&gt;</span>     worldToQuestion world <span class="fu">=</span>
+<span class="ot">&gt;</span>       foldr1 <span class="dt">And</span>
+<span class="ot">&gt;</span>       [ <span class="dt">Is</span> cid (getKind cid world)
+<span class="ot">&gt;</span>       <span class="fu">|</span> cid <span class="ot">&lt;-</span> [minBound<span class="fu">..</span>maxBound]
+<span class="ot">&gt;</span>       ]      </code></pre>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; getKind ::</span> <span class="dt">ComputerId</span> <span class="ot">-&gt;</span> <span class="dt">World</span> <span class="ot">-&gt;</span> <span class="dt">ComputerKind</span>
+<span class="ot">&gt;</span> getKind <span class="dt">I1</span> <span class="fu">=</span> i1
+<span class="ot">&gt;</span> getKind <span class="dt">I2</span> <span class="fu">=</span> i2
+<span class="ot">&gt;</span> getKind <span class="dt">I3</span> <span class="fu">=</span> i3</code></pre>
+<p>Все стратегии выбора перебираются тривиально.</p>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; strategies ::</span> [<span class="dt">Strategy</span>]
+<span class="ot">&gt;</span> strategies <span class="fu">=</span> <span class="kw">do</span>
+<span class="ot">&gt;</span>   t <span class="ot">&lt;-</span> [minBound<span class="fu">..</span>maxBound]
+<span class="ot">&gt;</span>   f <span class="ot">&lt;-</span> [minBound<span class="fu">..</span>maxBound]
+<span class="ot">&gt;</span>   return <span class="fu">$</span> <span class="dt">Strategy</span> t f</code></pre>
+<p>‘evalQuestion’ интерпретирует вопрос относительно заданной конфигурации компьютеров.</p>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; evalQuestion ::</span> <span class="dt">Question</span> <span class="ot">-&gt;</span> <span class="dt">World</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span>
+<span class="ot">&gt;</span> evalQuestion (<span class="dt">Is</span> cid kind) world <span class="fu">=</span> getKind cid world <span class="fu">==</span> kind
+<span class="ot">&gt;</span> evalQuestion (<span class="dt">Or</span>  q1 q2) world <span class="fu">=</span> evalQuestion q1 world <span class="fu">||</span>
+<span class="ot">&gt;</span>                                  evalQuestion q2 world
+<span class="ot">&gt;</span> evalQuestion (<span class="dt">And</span> q1 q2) world <span class="fu">=</span> evalQuestion q1 world <span class="fu">&amp;&amp;</span>
+<span class="ot">&gt;</span>                                  evalQuestion q2 world</code></pre>
+<p>‘applyStrategy’ выбирает компьютер, руководствуясь полученным ответом.</p>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; applyStrategy ::</span> <span class="dt">Strategy</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">ComputerId</span>
+<span class="ot">&gt;</span> applyStrategy <span class="dt">Strategy</span>{<span class="fu">..</span>} answer <span class="fu">|</span> answer    <span class="fu">=</span> ifTrue
+<span class="ot">&gt;</span>                                   <span class="fu">|</span> otherwise <span class="fu">=</span> ifFalse</code></pre>
+<p>‘check’ проверяет, что вопрос и стратегия позволяют всегда выбрать компьютер A или B.</p>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; check ::</span> <span class="dt">Question</span> <span class="ot">-&gt;</span> <span class="dt">Strategy</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span>
+<span class="ot">&gt;</span> check question strategy <span class="fu">=</span></code></pre>
+<p>Для этого нужно убедиться, что для всех возможных конфигураций (‘worlds’) алгоритм позволит выбрать подходящий компьютер.</p>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>   all (all isOkComputer <span class="fu">.</span> selectComputer) worlds
+<span class="ot">&gt;</span>   <span class="kw">where</span>
+<span class="ot">&gt;     isOkComputer ::</span> <span class="dt">ComputerKind</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span>
+<span class="ot">&gt;</span>     isOkComputer k <span class="fu">=</span> k <span class="fu">==</span> <span class="dt">A</span> <span class="fu">||</span> k <span class="fu">==</span> <span class="dt">B</span></code></pre>
+<p>Для заданной конфигурации ‘world’ мы вычисляем множество ответов ‘compAnswers’, которые может выдать опрашиваемый компьютер. Затем применяем стратегию выбора и получаем компьютеры, которые будут нами выбраны.</p>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;     selectComputer ::</span> <span class="dt">World</span> <span class="ot">-&gt;</span> [<span class="dt">ComputerKind</span>]
+<span class="ot">&gt;</span>     selectComputer world <span class="fu">=</span> map selectComp compAnswers
+<span class="ot">&gt;</span>       <span class="kw">where</span>
+<span class="ot">&gt;</span>         selectComp ans <span class="fu">=</span> getKind (applyStrategy strategy ans) world</code></pre>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>         answer  <span class="fu">=</span> evalQuestion question world
+<span class="ot">&gt;</span>         compAnswers <span class="fu">=</span> <span class="kw">case</span> i1 world <span class="kw">of</span>
+<span class="ot">&gt;</span>           <span class="dt">A</span> <span class="ot">-&gt;</span> [ answer ]
+<span class="ot">&gt;</span>           <span class="dt">B</span> <span class="ot">-&gt;</span> [ not answer ]
+<span class="ot">&gt;</span>           <span class="dt">C</span> <span class="ot">-&gt;</span> [ <span class="dt">True</span>, <span class="dt">False</span> ]</code></pre>
+<p>Проверяем все возможные пары вопрос-стратегия.</p>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; solutions ::</span> [(<span class="dt">Question</span>,<span class="dt">Strategy</span>)]
+<span class="ot">&gt;</span> solutions <span class="fu">=</span> <span class="kw">do</span>
+<span class="ot">&gt;</span>   q <span class="ot">&lt;-</span> questions
+<span class="ot">&gt;</span>   s <span class="ot">&lt;-</span> strategies
+<span class="ot">&gt;</span>   guard (check q s)
+<span class="ot">&gt;</span>   return (q,s)</code></pre>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; main ::</span> <span class="dt">IO</span> ()
+<span class="ot">&gt;</span> main <span class="fu">=</span> <span class="kw">do</span>
+<span class="ot">&gt;</span>   <span class="kw">let</span> showSolution (question,strategy) <span class="fu">=</span>
+<span class="ot">&gt;</span>         show strategy <span class="fu">++</span> <span class="st">&quot; &lt;== &quot;</span> <span class="fu">++</span> show question <span class="fu">++</span> <span class="st">&quot; ?&quot;</span>
+<span class="ot">&gt;</span>   mapM_ (putStrLn <span class="fu">.</span> showSolution) solutions</code></pre>
+<p>Вот и все решения задачи:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell">ghci<span class="fu">&gt;</span> main
+<span class="dt">Yes</span> <span class="fu">?</span> <span class="dv">2</span> <span class="fu">:</span> <span class="dv">3</span> <span class="fu">&lt;==</span> <span class="dv">1</span><span class="fu">==</span><span class="dt">A</span><span class="fu">&amp;</span><span class="dv">2</span><span class="fu">==</span><span class="dt">B</span><span class="fu">&amp;</span><span class="dv">3</span><span class="fu">==</span><span class="dt">C</span> <span class="fu">|</span> <span class="dv">1</span><span class="fu">==</span><span class="dt">B</span><span class="fu">&amp;</span><span class="dv">2</span><span class="fu">==</span><span class="dt">C</span><span class="fu">&amp;</span><span class="dv">3</span><span class="fu">==</span><span class="dt">A</span> <span class="fu">?</span>
+<span class="dt">Yes</span> <span class="fu">?</span> <span class="dv">2</span> <span class="fu">:</span> <span class="dv">3</span> <span class="fu">&lt;==</span> <span class="dv">1</span><span class="fu">==</span><span class="dt">A</span><span class="fu">&amp;</span><span class="dv">2</span><span class="fu">==</span><span class="dt">B</span><span class="fu">&amp;</span><span class="dv">3</span><span class="fu">==</span><span class="dt">C</span> <span class="fu">|</span> <span class="dv">1</span><span class="fu">==</span><span class="dt">C</span><span class="fu">&amp;</span><span class="dv">2</span><span class="fu">==</span><span class="dt">B</span><span class="fu">&amp;</span><span class="dv">3</span><span class="fu">==</span><span class="dt">A</span> <span class="fu">|</span> <span class="dv">1</span><span class="fu">==</span><span class="dt">B</span><span class="fu">&amp;</span><span class="dv">2</span><span class="fu">==</span><span class="dt">C</span><span class="fu">&amp;</span><span class="dv">3</span><span class="fu">==</span><span class="dt">A</span> <span class="fu">?</span>
+<span class="dt">Yes</span> <span class="fu">?</span> <span class="dv">2</span> <span class="fu">:</span> <span class="dv">3</span> <span class="fu">&lt;==</span> <span class="dv">1</span><span class="fu">==</span><span class="dt">A</span><span class="fu">&amp;</span><span class="dv">2</span><span class="fu">==</span><span class="dt">B</span><span class="fu">&amp;</span><span class="dv">3</span><span class="fu">==</span><span class="dt">C</span> <span class="fu">|</span> <span class="dv">1</span><span class="fu">==</span><span class="dt">B</span><span class="fu">&amp;</span><span class="dv">2</span><span class="fu">==</span><span class="dt">C</span><span class="fu">&amp;</span><span class="dv">3</span><span class="fu">==</span><span class="dt">A</span> <span class="fu">|</span> <span class="dv">1</span><span class="fu">==</span><span class="dt">C</span><span class="fu">&amp;</span><span class="dv">2</span><span class="fu">==</span><span class="dt">A</span><span class="fu">&amp;</span><span class="dv">3</span><span class="fu">==</span><span class="dt">B</span> <span class="fu">?</span>
+<span class="dt">Yes</span> <span class="fu">?</span> <span class="dv">2</span> <span class="fu">:</span> <span class="dv">3</span> <span class="fu">&lt;==</span> <span class="dv">1</span><span class="fu">==</span><span class="dt">A</span><span class="fu">&amp;</span><span class="dv">2</span><span class="fu">==</span><span class="dt">B</span><span class="fu">&amp;</span><span class="dv">3</span><span class="fu">==</span><span class="dt">C</span> <span class="fu">|</span> <span class="dv">1</span><span class="fu">==</span><span class="dt">C</span><span class="fu">&amp;</span><span class="dv">2</span><span class="fu">==</span><span class="dt">B</span><span class="fu">&amp;</span><span class="dv">3</span><span class="fu">==</span><span class="dt">A</span> <span class="fu">|</span> <span class="dv">1</span><span class="fu">==</span><span class="dt">B</span><span class="fu">&amp;</span><span class="dv">2</span><span class="fu">==</span><span class="dt">C</span><span class="fu">&amp;</span><span class="dv">3</span><span class="fu">==</span><span class="dt">A</span> <span class="fu">|</span> <span class="dv">1</span><span class="fu">==</span><span class="dt">C</span><span class="fu">&amp;</span><span class="dv">2</span><span class="fu">==</span><span class="dt">A</span><span class="fu">&amp;</span><span class="dv">3</span><span class="fu">==</span><span class="dt">B</span> <span class="fu">?</span>
+<span class="dt">Yes</span> <span class="fu">?</span> <span class="dv">3</span> <span class="fu">:</span> <span class="dv">2</span> <span class="fu">&lt;==</span> <span class="dv">1</span><span class="fu">==</span><span class="dt">B</span><span class="fu">&amp;</span><span class="dv">2</span><span class="fu">==</span><span class="dt">A</span><span class="fu">&amp;</span><span class="dv">3</span><span class="fu">==</span><span class="dt">C</span> <span class="fu">|</span> <span class="dv">1</span><span class="fu">==</span><span class="dt">A</span><span class="fu">&amp;</span><span class="dv">2</span><span class="fu">==</span><span class="dt">C</span><span class="fu">&amp;</span><span class="dv">3</span><span class="fu">==</span><span class="dt">B</span> <span class="fu">?</span>
+<span class="dt">Yes</span> <span class="fu">?</span> <span class="dv">3</span> <span class="fu">:</span> <span class="dv">2</span> <span class="fu">&lt;==</span> <span class="dv">1</span><span class="fu">==</span><span class="dt">B</span><span class="fu">&amp;</span><span class="dv">2</span><span class="fu">==</span><span class="dt">A</span><span class="fu">&amp;</span><span class="dv">3</span><span class="fu">==</span><span class="dt">C</span> <span class="fu">|</span> <span class="dv">1</span><span class="fu">==</span><span class="dt">C</span><span class="fu">&amp;</span><span class="dv">2</span><span class="fu">==</span><span class="dt">B</span><span class="fu">&amp;</span><span class="dv">3</span><span class="fu">==</span><span class="dt">A</span> <span class="fu">|</span> <span class="dv">1</span><span class="fu">==</span><span class="dt">A</span><span class="fu">&amp;</span><span class="dv">2</span><span class="fu">==</span><span class="dt">C</span><span class="fu">&amp;</span><span class="dv">3</span><span class="fu">==</span><span class="dt">B</span> <span class="fu">?</span>
+<span class="dt">Yes</span> <span class="fu">?</span> <span class="dv">3</span> <span class="fu">:</span> <span class="dv">2</span> <span class="fu">&lt;==</span> <span class="dv">1</span><span class="fu">==</span><span class="dt">B</span><span class="fu">&amp;</span><span class="dv">2</span><span class="fu">==</span><span class="dt">A</span><span class="fu">&amp;</span><span class="dv">3</span><span class="fu">==</span><span class="dt">C</span> <span class="fu">|</span> <span class="dv">1</span><span class="fu">==</span><span class="dt">C</span><span class="fu">&amp;</span><span class="dv">2</span><span class="fu">==</span><span class="dt">A</span><span class="fu">&amp;</span><span class="dv">3</span><span class="fu">==</span><span class="dt">B</span> <span class="fu">|</span> <span class="dv">1</span><span class="fu">==</span><span class="dt">A</span><span class="fu">&amp;</span><span class="dv">2</span><span class="fu">==</span><span class="dt">C</span><span class="fu">&amp;</span><span class="dv">3</span><span class="fu">==</span><span class="dt">B</span> <span class="fu">?</span>
+<span class="dt">Yes</span> <span class="fu">?</span> <span class="dv">3</span> <span class="fu">:</span> <span class="dv">2</span> <span class="fu">&lt;==</span> <span class="dv">1</span><span class="fu">==</span><span class="dt">B</span><span class="fu">&amp;</span><span class="dv">2</span><span class="fu">==</span><span class="dt">A</span><span class="fu">&amp;</span><span class="dv">3</span><span class="fu">==</span><span class="dt">C</span> <span class="fu">|</span> <span class="dv">1</span><span class="fu">==</span><span class="dt">C</span><span class="fu">&amp;</span><span class="dv">2</span><span class="fu">==</span><span class="dt">B</span><span class="fu">&amp;</span><span class="dv">3</span><span class="fu">==</span><span class="dt">A</span> <span class="fu">|</span> <span class="dv">1</span><span class="fu">==</span><span class="dt">C</span><span class="fu">&amp;</span><span class="dv">2</span><span class="fu">==</span><span class="dt">A</span><span class="fu">&amp;</span><span class="dv">3</span><span class="fu">==</span><span class="dt">B</span> <span class="fu">|</span> <span class="dv">1</span><span class="fu">==</span><span class="dt">A</span><span class="fu">&amp;</span><span class="dv">2</span><span class="fu">==</span><span class="dt">C</span><span class="fu">&amp;</span><span class="dv">3</span><span class="fu">==</span><span class="dt">B</span> <span class="fu">?</span></code></pre>
+<p>Заметьте, что ни в одном решении не выбирается опрашиваемый компьютер (1ый).</p>
+<p>Рассмотрим одно из решений (все они верны, но только оно и симметричное ему дают в итоге решение, которое красиво формулируется на естественном языке):</p>
+<p>Yes ? 3 : 2 &lt;== 1==B&amp;2==A&amp;3==C | 1==C&amp;2==A&amp;3==B | 1==A&amp;2==C&amp;3==B ?</p>
+<p>Вопрос можно упростить, опустив в каждом дизъюнкте любой из конъюнктов, потому что он однозначно восстанавливается по оставшимся двум. Удобнее всего будет исключить упоминания первого компьютера:</p>
+<p>2==A&amp;3==C | 2==A&amp;3==B | 2==C&amp;3==B ?</p>
+<p>Дизъюнкты можно обобщить в один, если воспользоваться очевидными утверждениями: 1. Компьютер А отвечает правдиво чаще, чем компьютер С 2. Компьютер С отвечает правдиво чаще, чем компьютер B 3. Компьютер A отвечает правдиво чаще, чем компьютер B</p>
+<p>Финальная лаконичная формулировка вопроса:</p>
+<p>Верно ли, что 2ой компьютер отвечает правдиво чаще, чем 3ий?</p>
+<p>Если 1ый компьютер отчает “да”, то выбирается 3ий компьютер, иначе 2ой.</p>
+
+ <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        var disqus_shortname = 'dubovikinfo'; // required: replace example with your forum shortname
+        var disqus_identifier = '/posts/2014-10-16-lie-to-me.html';
+        var disqus_url = 'http://dubovik.info' + '/posts/2014-10-16-lie-to-me.html';
+        var disqus_title = 'Lie to me';
+
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>
+      Please enable JavaScript to view the 
+      <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+    </noscript>
+
+</article>
+
+
+  <footer>
+    Generated by <a href="http://jaspervdj.be/hakyll/" target="_blank">hakyll</a>
+    The entire source code of this website is <a href="http://github.com/adubovik/adubovik.github.io" target="_blank"> available at github</a>
+    <br />
+    © 2015 Anton Dubovik
+  </footer>
+</body>
+
+</html>

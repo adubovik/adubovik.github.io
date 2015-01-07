@@ -1,1 +1,7 @@
 *~
+unpublished/
+*.hi
+*.o
+hakyll/hakyll*
+hakyll/_site/
+hakyll/_cache/

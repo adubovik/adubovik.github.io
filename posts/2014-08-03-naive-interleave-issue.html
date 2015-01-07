@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <meta name="author" content="Anton Dubovik">
+  <meta name="keywords" content="dubovik, haskell, programming, anton dubovik">
+  <meta name="description" content="Home page of Anton Dubovik">
+  <meta name="generator" content="hakyll">
+
+  <link rel="stylesheet" href="../static/main.css" />
+  <link rel="stylesheet" href="../static/syntax.css" />
+
+  <!-- Google webfonts -->
+  <link href="http://fonts.googleapis.com/css?family=Droid+Sans+Mono|Ubuntu&subset=latin,cyrillic" rel="stylesheet" type="text/css">
+
+  <!--[if IE]>
+  <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.min.js"></script>
+
+  <title>Недостатки наивной реализации interleave</title>
+</head>
+
+<body>
+
+  <script type="text/javascript">
+    var disqus_developer = 1;
+</script>
+
+<article>
+
+<h1 class="post_title">Недостатки наивной реализации interleave</h1>
+<div class="post_date">posted on 3 Aug 2014</div>
+
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="ot">{-# language TupleSections #-}</span></code></pre>
+<p>Требуется написать функцию с сигнатурой</p>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; interleave ::</span> [a] <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> [a]</code></pre>
+<p>которая возвращает список, образованный перемежением элементов исходных списков. Например:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> interleave [<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>] [<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">7</span>,<span class="dv">8</span>]
+[<span class="dv">1</span>,<span class="dv">4</span>,<span class="dv">2</span>,<span class="dv">5</span>,<span class="dv">3</span>,<span class="dv">6</span>,<span class="dv">7</span>,<span class="dv">8</span>]
+<span class="fu">&gt;</span> interleave [<span class="dv">1</span>,<span class="dv">2</span>] []
+[<span class="dv">1</span>,<span class="dv">2</span>]</code></pre>
+<p>Скорее всего, вы почти моментально придете к следующему определению:</p>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> interleave [] ys <span class="fu">=</span> ys
+<span class="ot">&gt;</span> interleave xs [] <span class="fu">=</span> xs
+<span class="ot">&gt;</span> interleave (x<span class="fu">:</span>xs) (y<span class="fu">:</span>ys) <span class="fu">=</span> x<span class="fu">:</span>y<span class="fu">:</span>interleave xs ys</code></pre>
+<p>Всего три строки, где две отведены под очевидные базовые случаи. Что может быть проще? Однако, в этой реализации есть едва уловимый изъян - она черезчур строгая.</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> take <span class="dv">3</span> <span class="fu">$</span> interleave [<span class="dv">1</span>,<span class="dv">2</span>] (<span class="dv">3</span><span class="fu">:</span>error <span class="st">&quot;Oops!&quot;</span>)
+[<span class="dv">1</span>,<span class="dv">3</span><span class="fu">***</span> <span class="dt">Exception</span><span class="fu">:</span> <span class="dt">Oops</span><span class="fu">!</span></code></pre>
+<p>Что произошло? Мы сопоставили с образцом “[]” список (error “Oops!”), в то время как это было ненужно. Как это справить? Просто отложить сопоставление с паттерном для второго списка до тех пор, пока его элементы действительно не понадобятся.</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell">interleave' [] ys <span class="fu">=</span> ys
+interleave' (x<span class="fu">:</span>xs) ys <span class="fu">=</span> x <span class="fu">:</span> (
+  <span class="kw">case</span> ys <span class="kw">of</span>
+    []     <span class="ot">-&gt;</span> xs
+    (y<span class="fu">:</span>ys) <span class="ot">-&gt;</span> y <span class="fu">:</span> interleave' xs ys
+  )</code></pre>
+<p>Или так (если заметить, что выражение в скобках есть вызов interleave’ cо списками ys и xs), что элегантнее:</p>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> interleave' []     ys <span class="fu">=</span> ys
+<span class="ot">&gt;</span> interleave' (x<span class="fu">:</span>xs) ys <span class="fu">=</span> x<span class="fu">:</span>interleave' ys xs</code></pre>
+<p>Пример с ошибкой, бросаемой хвостом второго списка, кажется надуманным, ведь обычно мы производим вычисления над вполне определенными и конечными списками (например, данными, прочтенными с жесткого диска). Однако, все меняется, когда мы пытаемся оперировать бесконечными списками, в этому случае нужно очень аккуратно следить за тем, что форсится, что - нет.</p>
+<p>С выражением типа</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell">[<span class="dv">1</span><span class="fu">..</span>] <span class="ot">`interleave`</span> [<span class="dv">1</span><span class="fu">..</span>]</code></pre>
+<p>все в порядке, но что если, второй аргумент в interleave сам в свою очередь вычисляется через применение interleave? Например:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">let</span> x <span class="fu">=</span> take <span class="dv">1</span> <span class="fu">$</span> foldr1 interleave (repeat [<span class="dv">1</span><span class="fu">..</span>])</code></pre>
+<p>что разворачивается в бесконечную право-вложенную последовательность применений interleave к [1..]:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">let</span> x <span class="fu">=</span> take <span class="dv">1</span> <span class="fu">$</span> [<span class="dv">1</span><span class="fu">..</span>] <span class="ot">`interleave`</span> (
+                 [<span class="dv">1</span><span class="fu">..</span>] <span class="ot">`interleave`</span> (
+                 [<span class="dv">1</span><span class="fu">..</span>] <span class="ot">`interleave`</span> <span class="fu">...</span>))</code></pre>
+<p>Для того, чтобы вычислить x достаточно зафорсить первый [1..] до конструктора (:), но наивная версия interleave вместе с тем зафорсит до конструктора списка и второй аргумент interleave:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell">                 ([<span class="dv">1</span><span class="fu">..</span>] <span class="ot">`interleave`</span> (
+                  [<span class="dv">1</span><span class="fu">..</span>] <span class="ot">`interleave`</span> <span class="fu">...</span>))</code></pre>
+<p>и так далее… В итоге, программа зависает в бесконечном цикле.</p>
+<p>Можно переписать этот пример несколько иначе:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">let</span> x <span class="fu">=</span> take <span class="dv">1</span> <span class="fu">$</span> <span class="kw">let</span> y <span class="fu">=</span> [<span class="dv">1</span><span class="fu">..</span>] <span class="ot">`interleave`</span> y
+                 <span class="kw">in</span>  y</code></pre>
+<p>что семантически то же самое, но зависать вычисление x будет по слегка иной причине.</p>
+<p>К счастью, наша максимально ленивая версия interleave’ решает эти зависания и ‘x’ благополучно вычисляется до [1].</p>
+<p>interleave’ можно использовать как замену (++) в случае генерации элементов счетного множества, при этом использование interleave’ дает гарантии, что каждый элемент множества рано или поздно встретится в результирующей последовательности.</p>
+<p>Пример с сериализацией бесконечной таблицы:</p>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; table2D ::</span> [[(<span class="dt">Int</span>,<span class="dt">Int</span>)]]
+<span class="ot">&gt;</span> table2D <span class="fu">=</span> map (zip [<span class="dv">1</span><span class="fu">..</span>] <span class="fu">.</span> repeat) [<span class="dv">1</span><span class="fu">..</span>]</code></pre>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; serializeTable ::</span> [[a]] <span class="ot">-&gt;</span> [a]
+<span class="ot">&gt;</span> serializeTable <span class="fu">=</span> foldr1 interleave'</code></pre>
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> take <span class="dv">10</span> <span class="fu">$</span> serializeTable table2D
+[(<span class="dv">1</span>,<span class="dv">1</span>),(<span class="dv">1</span>,<span class="dv">2</span>),(<span class="dv">2</span>,<span class="dv">1</span>),(<span class="dv">1</span>,<span class="dv">3</span>),(<span class="dv">3</span>,<span class="dv">1</span>),(<span class="dv">2</span>,<span class="dv">2</span>),(<span class="dv">4</span>,<span class="dv">1</span>),(<span class="dv">1</span>,<span class="dv">4</span>),(<span class="dv">5</span>,<span class="dv">1</span>),(<span class="dv">3</span>,<span class="dv">2</span>)]</code></pre>
+<p>Это похоже на диагонализацию Кантора, однако, не является ею, потому что элементы первого ряда в исходной таблице встречаются в результирующей последовательности в два раза чаще, чем элементы второго ряда, в четыре раза чаще, чем третьего, в восемь, чем четвертого и так далее по степеням двойки.</p>
+<p>Тем не менее, эта программа может точно так же может служить доказательством счетности множества рациональных чисел.</p>
+<p>Еще один пример использования interleave’ - это генерация выражений в некотором языке.</p>
+<p>Термы языка представляются объектами типа:</p>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">Exp</span> <span class="fu">=</span> <span class="dt">Lit</span> <span class="dt">Int</span>
+<span class="ot">&gt;</span>          <span class="fu">|</span> <span class="dt">Add</span> <span class="dt">Exp</span> <span class="dt">Exp</span>
+<span class="ot">&gt;</span> 
+<span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Show</span> <span class="dt">Exp</span> <span class="kw">where</span>
+<span class="ot">&gt;</span>   show (<span class="dt">Lit</span> i) <span class="fu">=</span> show i
+<span class="ot">&gt;</span>   show (<span class="dt">Add</span> x y) <span class="fu">=</span> <span class="st">&quot;(&quot;</span> <span class="fu">++</span> show x <span class="fu">++</span> <span class="st">&quot;+&quot;</span> <span class="fu">++</span> show y <span class="fu">++</span> <span class="st">&quot;)&quot;</span></code></pre>
+<p>Тогда генератор термов можно выразить, следуя структуре этого ADT:</p>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; genExp ::</span> [<span class="dt">Exp</span>]
+<span class="ot">&gt;</span> genExp <span class="fu">=</span> map <span class="dt">Lit</span> [<span class="dv">1</span><span class="fu">..</span><span class="dv">3</span>] <span class="ot">`interleave'`</span>
+<span class="ot">&gt;</span>          map (uncurry <span class="dt">Add</span>) (genExp <span class="ot">`cartesian`</span> genExp)</code></pre>
+<p>где cartesian перемножает множества и сериализует результат, подобно тому, как это делалось в serializeTable:</p>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; cartesian ::</span> [a] <span class="ot">-&gt;</span> [b] <span class="ot">-&gt;</span> [(a,b)]
+<span class="ot">&gt;</span> cartesian []     ys <span class="fu">=</span> []
+<span class="ot">&gt;</span> cartesian (x<span class="fu">:</span>xs) ys <span class="fu">=</span> map (x,) ys <span class="ot">`interleave'`</span>
+<span class="ot">&gt;</span>                       cartesian xs ys</code></pre>
+<p>В итоге:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> mapM_ (putStrLn <span class="fu">.</span> show) <span class="fu">$</span> take <span class="dv">10</span> genExp
+<span class="dv">1</span>
+(<span class="dv">1</span><span class="fu">+</span><span class="dv">1</span>)
+<span class="dv">2</span>
+((<span class="dv">1</span><span class="fu">+</span><span class="dv">1</span>)<span class="fu">+</span><span class="dv">1</span>)
+<span class="dv">3</span>
+(<span class="dv">1</span><span class="fu">+</span>(<span class="dv">1</span><span class="fu">+</span><span class="dv">1</span>))
+(<span class="dv">2</span><span class="fu">+</span><span class="dv">1</span>)
+(<span class="dv">1</span><span class="fu">+</span><span class="dv">2</span>)
+((<span class="dv">1</span><span class="fu">+</span><span class="dv">1</span>)<span class="fu">+</span>(<span class="dv">1</span><span class="fu">+</span><span class="dv">1</span>))
+(<span class="dv">1</span><span class="fu">+</span>((<span class="dv">1</span><span class="fu">+</span><span class="dv">1</span>)<span class="fu">+</span><span class="dv">1</span>))</code></pre>
+
+ <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        var disqus_shortname = 'dubovikinfo'; // required: replace example with your forum shortname
+        var disqus_identifier = '/posts/2014-08-03-naive-interleave-issue.html';
+        var disqus_url = 'http://dubovik.info' + '/posts/2014-08-03-naive-interleave-issue.html';
+        var disqus_title = 'Недостатки наивной реализации interleave';
+
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>
+      Please enable JavaScript to view the 
+      <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+    </noscript>
+
+</article>
+
+
+  <footer>
+    Generated by <a href="http://jaspervdj.be/hakyll/" target="_blank">hakyll</a>
+    The entire source code of this website is <a href="http://github.com/adubovik/adubovik.github.io" target="_blank"> available at github</a>
+    <br />
+    © 2015 Anton Dubovik
+  </footer>
+</body>
+
+</html>

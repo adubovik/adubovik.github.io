@@ -1,6 +1,6 @@
 ---
-title: MergeSort & Probability distribution monad
-description: MergeSort & Probability distribution monad
+title: MergeSort and probability distribution monad
+description: MergeSort and probability distribution monad
 date: Oct 7, 2014
 ---
 

@@ -11,7 +11,6 @@ exceptions =
   , ".gitignore"
   , ".git"
   , "CNAME"
-  , "README.md"
   ]
 
 delete :: FilePath -> IO ()

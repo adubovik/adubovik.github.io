@@ -42,20 +42,20 @@
 <span class="ot">&gt;</span> 
 <span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Data.List</span>
 <span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Control.Monad</span></code></pre>
-<p>Недавно мы с коллегами в ожидании митинга обсуждали интересную реализацию алгоритма обхода графа в ширину, которая была описана в блогпосте http://monadmadness.wordpress.com/2014/11/10/purely-functional-graph-search-algorithms/</p>
+<p>Недавно мы с коллегами в ожидании митинга обсуждали интересную реализацию алгоритма обхода графа в ширину, которая была описана в <a href="http://monadmadness.wordpress.com/2014/11/10/purely-functional-graph-search-algorithms/">блогпосте</a>.</p>
 <p>Самым интересным в описанном алгоритме было то, что он непохож на стандартные реализации bfs, которые используют очередь, калькируя bfs в императивном сеттинге.</p>
 <p>Граф представляется следующим типом:</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">Graph</span> a <span class="fu">=</span> <span class="dt">Node</span> a [<span class="dt">Graph</span> a] <span class="kw">deriving</span> (<span class="dt">Functor</span>, <span class="dt">Show</span>)
 <span class="ot">&gt;</span> <span class="kw">type</span> <span class="dt">Path</span> a <span class="fu">=</span> [a]</code></pre>
-<p>Каждая вершина уникально идентифицируется значением типа ‘a’. Путь в графе обозначается списком таких значений. Из графа предварительно удаляются все циклы, так что в последующих рассуждениях мы будет рассматривать только ацикличные графы.</p>
+<p>Каждая вершина уникально идентифицируется значением типа <code>a</code>. Путь в графе обозначается списком таких значений. Из графа предварительно удаляются все циклы, так что в последующих рассуждениях мы будет рассматривать только ацикличные графы.</p>
 <p>Алгоритм из блогпоста возвращает последовательность путей от корневой вершины дерева до каждой вершины графа в порядке обхода в ширину:</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; bfsOrig ::</span> <span class="dt">Graph</span> a <span class="ot">-&gt;</span> [<span class="dt">Path</span> a]
 <span class="ot">&gt;</span> bfsOrig (<span class="dt">Node</span> x xs) <span class="fu">=</span></code></pre>
-<p>Сперва вычисляется рекурсивно множество путей для детей данной вершины ‘kidsPaths :: [[Path a]]’,</p>
+<p>Сперва вычисляется рекурсивно множество путей для детей данной вершины <code>kidsPaths :: [[Path a]]</code>,</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>   <span class="kw">let</span> kidsPaths <span class="fu">=</span> map bfsOrig xs <span class="kw">in</span></code></pre>
-<p>затем списки путей в ‘kidsPaths’ объединяются таким образом, что пути следуют в порядке неубывания длины пути.</p>
+<p>затем списки путей в <code>kidsPaths</code> объединяются таким образом, что пути следуют в порядке неубывания длины пути.</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>   ([x]<span class="fu">:</span>) <span class="fu">.</span> map (x<span class="fu">:</span>) <span class="fu">$</span> foldr mergeRanked [] kidsPaths</code></pre>
-<p>С помощью ‘mergeRanked’ можно объединить два списка путей, упорядоченных в порядке неубывания длины, в список с таким же свойством. ‘mergeRanked’ проверяет длины путей, стоящих в голове списков, и ставит вперед путь с меньшей длиной.</p>
+<p>С помощью <code>mergeRanked</code> можно объединить два списка путей, упорядоченных в порядке неубывания длины, в список с таким же свойством. <code>mergeRanked</code> проверяет длины путей, стоящих в голове списков, и ставит вперед путь с меньшей длиной.</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>   <span class="kw">where</span>      
 <span class="ot">&gt;     mergeRanked ::</span> [<span class="dt">Path</span> a] <span class="ot">-&gt;</span> [<span class="dt">Path</span> a] <span class="ot">-&gt;</span> [<span class="dt">Path</span> a]
 <span class="ot">&gt;</span>     mergeRanked [] ys <span class="fu">=</span> ys
@@ -64,7 +64,7 @@
 <span class="ot">&gt;</span>       <span class="kw">if</span> length x <span class="fu">&lt;</span> length y
 <span class="ot">&gt;</span>       <span class="kw">then</span> x <span class="fu">:</span> mergeRanked xs (y<span class="fu">:</span>ys)
 <span class="ot">&gt;</span>       <span class="kw">else</span> y <span class="fu">:</span> mergeRanked (x<span class="fu">:</span>xs) ys</code></pre>
-<p>Во время обсуждения алгоритма мы с коллегами пришли в выводу, что этот алгоритм чересчур строг, за счет того, что использует ‘length’ для вычисления длины пути, а это значит, что в дереве, отличном от линейной последовательности вершин, нам придётся вычислить как минимум глубину left-most листа дерева.</p>
+<p>Во время обсуждения алгоритма мы с коллегами пришли в выводу, что этот алгоритм чересчур строг, за счет того, что использует <code>length</code> для вычисления длины пути, а это значит, что в дереве, отличном от линейной последовательности вершин, нам придётся вычислить как минимум глубину left-most листа дерева.</p>
 <p>Рассуждения эти оказались неверны - алгоритм лениво вычисляет bfs пути даже в бесконечном дереве.</p>
 <p>Определим полное бинарное дерево высоты n:</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; binTree ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Graph</span> <span class="dt">Int</span>
@@ -79,23 +79,26 @@
 <span class="ot">&gt; binTreeInf ::</span> <span class="dt">Graph</span> <span class="dt">Int</span>
 <span class="ot">&gt;</span> binTreeInf <span class="fu">=</span> binTree <span class="dv">0</span></code></pre>
 <p>Проверим, что бесконечное дерево обрабатывается корректно:</p>
-<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> take <span class="dv">3</span> <span class="fu">$</span> bfsOrig <span class="fu">$</span> binTreeInf
-[[<span class="dv">1</span>],[<span class="dv">1</span>,<span class="dv">3</span>],[<span class="dv">1</span>,<span class="dv">2</span>]]</code></pre>
+<pre><code>*Main&gt; take 3 $ bfsOrig $ binTreeInf
+[[1],[1,3],[1,2]]</code></pre>
 <p>Indeed so!</p>
 <p>Какая жалость, ведь я начинал писать этот текст, будучи уверенным, что алгоритм не работает на бесконечных деревьях. Тем не менее, моему алгоритму, который был придуман как более ленивая версия оригинального, есть чем вас позабавить.</p>
-<p>Я избавился от того, что мне изначально не понравилось в оригинальном алгоритме - вычисление (и последующее неоднократное перевычисление) ‘length’. Конечно, можно было бы кешировать длину и увеличивать на единицу каждый раз как путь удлинялся, но это только усложнило бы решение.</p>
+<p>Я избавился от того, что мне изначально не понравилось в оригинальном алгоритме - вычисление (и последующее неоднократное перевычисление) <code>length</code>. Конечно, можно было бы кешировать длину и увеличивать на единицу каждый раз как путь удлинялся, но это только усложнило бы решение.</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; bfsPaths ::</span> <span class="dt">Graph</span> a <span class="ot">-&gt;</span> [<span class="dt">Path</span> a]
 <span class="ot">&gt;</span> bfsPaths <span class="fu">=</span> concat <span class="fu">.</span> go []
 <span class="ot">&gt;</span>   <span class="kw">where</span></code></pre>
-<p>Вместо этого, новый алгоритм оперирует последовательностью путей, разбитых на классы эквивалентности по длине пути. ‘go’ принимает путь от корня дерева до текущей вершины ‘x’, сам граф и возвращает список типа [[Path a]]:</p>
-<p>[<множество путей из корня, проходящих через 'x', длины (length path + 1)> [<множество путей из корня, проходящих через 'x', длины (length path + 2)> [<множество путей из корня, проходящих через 'x', длины (length path + 3)> …]</p>
+<p>Вместо этого, новый алгоритм оперирует последовательностью путей, разбитых на классы эквивалентности по длине пути. <code>go</code> принимает путь от корня дерева до текущей вершины <code>x</code>, сам граф и возвращает список типа <code>[[Path a]]</code>:</p>
+<pre><code>[&lt;множество путей из корня, проходящих через 'x', длины (length path + 1)&gt;
+[&lt;множество путей из корня, проходящих через 'x', длины (length path + 2)&gt;
+[&lt;множество путей из корня, проходящих через 'x', длины (length path + 3)&gt;
+...]</code></pre>
 <p>Т.е. теперь длина пути кодируется позицией в списке, и поэтому нет нужды явно вычислять длину.</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;     go ::</span> <span class="dt">Path</span> a <span class="ot">-&gt;</span> <span class="dt">Graph</span> a <span class="ot">-&gt;</span> [[<span class="dt">Path</span> a]]
 <span class="ot">&gt;</span>     go path (<span class="dt">Node</span> x xs) <span class="fu">=</span>
 <span class="ot">&gt;</span>       <span class="kw">let</span> path' <span class="fu">=</span> x<span class="fu">:</span>path</code></pre>
-<p>Чтобы посчитать пути до вершин, достижимых из ‘x’, достаточно рекурсивно вычислить пути для детей ‘kidsPaths’,</p>
+<p>Чтобы посчитать пути до вершин, достижимых из <code>x</code>, достаточно рекурсивно вычислить пути для детей <code>kidsPaths</code>,</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>           kidsPaths <span class="fu">=</span> map (go path') xs</code></pre>
-<p>затем поэлементно объединить их через ‘concat’ и добавить путь до ‘x’:</p>
+<p>затем поэлементно объединить их через <code>concat</code> и добавить путь до <code>x</code>:</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>       <span class="kw">in</span>  [path'] <span class="fu">:</span> zipWithN concat kidsPaths
 <span class="ot">&gt;</span> 
 <span class="ot">&gt;     zipWithN ::</span> ([a] <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [<span class="dt">Path</span> a] <span class="ot">-&gt;</span> [b]
@@ -108,16 +111,20 @@
 <ul>
 <li>не используется очередь</li>
 <li>алгоритм рекурсивен</li>
-<li>никаких ‘length’</li>
+<li>никаких <code>length</code></li>
 </ul></li>
 </ol>
-<p>*** Память ***</p>
-<p>Сколько памяти займет результирующий список путей, вычисленный ‘bfsPaths’?</p>
-<p>Каждый вызов функции ‘go’ аллоцирует константное количество конструкторов списка: 1. один (:) в ‘x:path’ 2. два (:) и один [] в ‘[path’] :’</p>
-<p>‘map f’ аллоцирует новых конструкторов столько же, сколько будет деаллоцированно сборщиком мусора, при условии, что список, к которому применяется ‘map f’, больше никому не потребуется. С ‘transpose’ баланс может сместиться немного в сторону аллоцированных конструкторов, но он позже восстанавливается ‘concat’.</p>
-<p>Получается, что множество всех путей будет занимать в памяти всего O(|V|) памяти, где |V| - количество вершин в графе!</p>
-<p>Это немного контринтуитивно, ведь если сложить длины всех |V| путей получится O(|V|*log2|V|). А ведь это только оценка для полного бинарного дерева (доказательство оставляю читателю).</p>
-<p>Для вырожденого линейного графа оценка будет и вовсе O(|V|^2)!</p>
+<h2 id="память">Память</h2>
+<p>Сколько памяти займет результирующий список путей, вычисленный <code>bfsPaths</code>?</p>
+<p>Каждый вызов функции <code>go</code> аллоцирует константное количество конструкторов списка:</p>
+<ol style="list-style-type: decimal">
+<li>один <code>(:)</code> в (<code>x:path</code>)</li>
+<li>два <code>(:)</code> и один <code>[]</code> в (<code>[path'] :</code>)</li>
+</ol>
+<p><code>map f</code> аллоцирует новых конструкторов столько же, сколько будет деаллоцированно сборщиком мусора, при условии, что список, к которому применяется <code>map f</code>, больше никому не потребуется. С <code>transpose</code> баланс может сместиться немного в сторону аллоцированных конструкторов, но он позже восстанавливается <code>concat</code>.</p>
+<p>Получается, что множество всех путей будет занимать в памяти всего <em>O(|V|)</em> памяти, где <em>|V|</em> - количество вершин в графе!</p>
+<p>Это немного контринтуитивно, ведь если сложить длины всех <em>|V|</em> путей получится <em>O(|V|*log2|V|)</em>. А ведь это только оценка для полного бинарного дерева (доказательство оставляю читателю).</p>
+<p>Для вырожденого линейного графа оценка будет и вовсе <em>O(|V|^2)</em>!</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; pathsSizeBin ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>
 <span class="ot">&gt;</span> pathsSizeBin n <span class="fu">=</span> sum <span class="fu">.</span> map length <span class="fu">.</span> bfsPaths <span class="fu">$</span> binTree n
 <span class="ot">&gt;</span> 
@@ -127,21 +134,22 @@
 <span class="ot">&gt; pathsSizeLin ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>
 <span class="ot">&gt;</span> pathsSizeLin n <span class="fu">=</span> sum <span class="fu">.</span> map length <span class="fu">.</span> bfsPaths <span class="fu">$</span> linTree n</code></pre>
 <p>Выигрыш по памяти достигается за счет sharing. Например два пути:</p>
-<p>[4,3,2,1][7,6,2,1]</p>
-<p>будут представлены в памяти не 8 (:) ячейками, а только 6-ю, потому что часть [2,1] у обоих путей общая. Как раз для достижения такого обобществления суффиксов путей было выбрано представление пути от вершины до корня дерева, а не наоборот (как в алгоритм по ссылке).</p>
-<p>*** Ленивость ***</p>
+<pre><code>[4,3,2,1]
+[7,6,2,1]</code></pre>
+<p>будут представлены в памяти не 8 <code>(:)</code> ячейками, а только 6-ю, потому что часть <code>[2,1]</code> у обоих путей общая. Как раз для достижения такого обобществления суффиксов путей было выбрано представление пути от вершины до корня дерева, а не наоборот (как в алгоритм по ссылке).</p>
+<h2 id="ленивость">Ленивость</h2>
 <p>Простейший способ узнать насколько строга/ленива функция, обрабатывающая какое-нибудь дерево - это запустить её на бесконечном дереве и зафорсить небольшую часть того, что вычислила функция. В случаем, если функция чересчур строга, ghc просто зависнет, пытаясь обработать бесконечное дерево.</p>
 <p>Даже если функция никогда не будет вызываться на бесконечных деревьях, она будет форсить дерево до самых листьев, что на больших деревьях может быть неприемлимо - алгоритм завершит свою работу, но за большее время, чем его более ленивый аналог.</p>
-<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> take <span class="dv">3</span> <span class="fu">$</span> bfsPaths <span class="fu">$</span> binTreeInf
-[[<span class="dv">1</span>],[<span class="dv">2</span>,<span class="dv">1</span>],[<span class="dv">3</span>,<span class="dv">1</span>]]</code></pre>
+<pre><code>*Main&gt; take 3 $ bfsPaths $ binTreeInf
+[[1],[2,1],[3,1]]</code></pre>
 <p>P.S.</p>
-<p>Пожертвовав ясностью кода, с помощью системы типов Haskell можно гаранировать, что в последовательности путей, которую вычисляет bfsPaths, пути будут следовать в порядке неубывания длины пути.</p>
-<p>Можно достичь этого с помощью GADTs или nested datatype. Я рассмотрю второй вариант.</p>
+<p>Пожертвовав ясностью кода, с помощью системы типов Haskell можно гаранировать, что в последовательности путей, которую вычисляет <code>bfsPaths</code>, пути будут следовать в порядке неубывания длины пути.</p>
+<p>Можно достичь этого с помощью <em>GADTs</em> или <em>nested datatype</em>. Я рассмотрю второй вариант.</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">List</span> f a as <span class="fu">=</span> <span class="dt">Cons</span> (f (a,as)) (<span class="dt">List</span> f a (a,as)) <span class="fu">|</span> <span class="dt">Nil</span>
 <span class="ot">&gt;</span> <span class="kw">type</span> <span class="dt">PathSet</span> a <span class="fu">=</span> <span class="dt">List</span> [] a ()</code></pre>
-<p>Тип ‘PathSet a’ изоморфен ‘[[Path a]]’ с одной оговоркой - системой типов гаранитруется, что первый элемент этого списка содержит все пути длины 1 (ни больше, ни меньше), второй элемент - все пути длины 2 и т.д. Такого типа значение возвращает bfs.</p>
+<p>Тип <code>PathSet a</code> изоморфен <code>[[Path a]]</code> с одной оговоркой - системой типов гаранитруется, что первый элемент этого списка содержит все пути длины 1 (ни больше, ни меньше), второй элемент - все пути длины 2 и т.д. Такого типа значение возвращает <code>bfs</code>.</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">newtype</span> <span class="dt">LL</span> a <span class="fu">=</span> <span class="dt">LL</span> {<span class="ot"> unLL ::</span> [[a]] }</code></pre>
-<p>Увы, пришлось ввести LL обертку, потому что нельзя уточнить тип ‘List f a as’ типом ‘List [[]] a as’, приходится работать с ‘List LL a as’.</p>
+<p>Увы, пришлось ввести <code>LL</code> обертку, потому что нельзя уточнить тип <code>List f a as</code> типом <code>List [[]] a as</code>, приходится работать с <code>List LL a as</code>.</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; onUnderlying ::</span> (forall x<span class="fu">.</span> f x <span class="ot">-&gt;</span> g x) <span class="ot">-&gt;</span> <span class="dt">List</span> f a as <span class="ot">-&gt;</span> <span class="dt">List</span> g a as
 <span class="ot">&gt;</span> onUnderlying t (<span class="dt">Cons</span> fa rest) <span class="fu">=</span> <span class="dt">Cons</span> (t fa) (onUnderlying t rest)
 <span class="ot">&gt;</span> onUnderlying _ <span class="dt">Nil</span> <span class="fu">=</span> <span class="dt">Nil</span>
@@ -157,7 +165,7 @@
 <span class="ot">&gt;</span> 
 <span class="ot">&gt;     zipAndConcat ::</span> [<span class="dt">List</span> [] a as] <span class="ot">-&gt;</span> <span class="dt">List</span> [] a as
 <span class="ot">&gt;</span>     zipAndConcat <span class="fu">=</span> onUnderlying (concat <span class="fu">.</span> unLL) <span class="fu">.</span> transpose'</code></pre>
-<p>Определение ‘transpose’‘повторяет ’transpose’ из Data.List с очевидными измениями.</p>
+<p>Определение <code>transpose'</code> повторяет <a href="http://hackage.haskell.org/package/base-4.7.0.2/docs/src/Data-List.html#transpose">transpose</a> из <em>Data.List</em> с очевидными измениями.</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;     transpose' ::</span> [<span class="dt">List</span> [] a as] <span class="ot">-&gt;</span> <span class="dt">List</span> <span class="dt">LL</span> a as
 <span class="ot">&gt;</span>     transpose' [] <span class="fu">=</span> <span class="dt">Nil</span>
 <span class="ot">&gt;</span>     transpose' (<span class="dt">Nil</span> <span class="fu">:</span> xss) <span class="fu">=</span> transpose' xss
@@ -174,8 +182,8 @@
 <span class="ot">&gt;</span>     go toList (<span class="dt">Cons</span> ls rest) <span class="fu">=</span>
 <span class="ot">&gt;</span>       <span class="kw">let</span> toList' a <span class="fu">=</span> (a<span class="fu">:</span>) <span class="fu">.</span> uncurry toList
 <span class="ot">&gt;</span>       <span class="kw">in</span>  fmap (uncurry toList) ls <span class="fu">:</span> go toList' rest</code></pre>
-<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> take <span class="dv">3</span> <span class="fu">$</span> bfsPaths' <span class="fu">$</span> binTreeInf
-[[<span class="dv">1</span>],[<span class="dv">2</span>,<span class="dv">1</span>],[<span class="dv">3</span>,<span class="dv">1</span>]]</code></pre>
+<pre><code>*Main&gt; take 3 $ bfsPaths' $ binTreeInf
+[[1],[2,1],[3,1]]</code></pre>
 <p>Яху, работает!</p>
 <p>UPD 28 Dec 2014</p>
 <p>Разделил задачи построения пути от корня дерева до вершины и собственно обход дерева в порядке поиска в ширину на две функции:</p>
@@ -196,11 +204,11 @@
 <span class="ot">&gt;</span> get (<span class="dt">Node</span> a _) <span class="fu">=</span> a</code></pre>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; children ::</span> <span class="dt">Graph</span> a <span class="ot">-&gt;</span> [<span class="dt">Graph</span> a]
 <span class="ot">&gt;</span> children (<span class="dt">Node</span> _ gs) <span class="fu">=</span> gs</code></pre>
-<p>bfsPaths’’ получается их композицией и извлечением корневого пути из каждого дерева:</p>
+<p><code>bfsPaths''</code> получается их композицией и извлечением корневого пути из каждого дерева:</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; bfsPaths'' ::</span> <span class="dt">Graph</span> a <span class="ot">-&gt;</span> [<span class="dt">Path</span> a]
 <span class="ot">&gt;</span> bfsPaths'' <span class="fu">=</span> map get <span class="fu">.</span> levelOrder <span class="fu">.</span> pathsGraph</code></pre>
-<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> take <span class="dv">3</span> <span class="fu">$</span> bfsPaths'' <span class="fu">$</span> binTreeInf
-[[<span class="dv">1</span>],[<span class="dv">2</span>,<span class="dv">1</span>],[<span class="dv">3</span>,<span class="dv">1</span>]]</code></pre>
+<pre><code>*Main&gt; take 3 $ bfsPaths'' $ binTreeInf
+[[1],[2,1],[3,1]]</code></pre>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; main ::</span> <span class="dt">IO</span> ()
 <span class="ot">&gt;</span> main <span class="fu">=</span> <span class="kw">do</span>
 <span class="ot">&gt;</span>   <span class="kw">let</span> algos <span class="fu">=</span> [bfsOrig, bfsPaths, bfsPaths', bfsPaths'']

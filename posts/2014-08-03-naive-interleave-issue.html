@@ -38,56 +38,57 @@
 <p>Требуется написать функцию с сигнатурой</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; interleave ::</span> [a] <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> [a]</code></pre>
 <p>которая возвращает список, образованный перемежением элементов исходных списков. Например:</p>
-<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> interleave [<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>] [<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">7</span>,<span class="dv">8</span>]
-[<span class="dv">1</span>,<span class="dv">4</span>,<span class="dv">2</span>,<span class="dv">5</span>,<span class="dv">3</span>,<span class="dv">6</span>,<span class="dv">7</span>,<span class="dv">8</span>]
-<span class="fu">&gt;</span> interleave [<span class="dv">1</span>,<span class="dv">2</span>] []
-[<span class="dv">1</span>,<span class="dv">2</span>]</code></pre>
+<pre><code>*Main&gt; interleave [1,2,3] [4,5,6,7,8]
+[1,4,2,5,3,6,7,8]
+*Main&gt; interleave [1,2] []
+[1,2]</code></pre>
 <p>Скорее всего, вы почти моментально придете к следующему определению:</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> interleave [] ys <span class="fu">=</span> ys
 <span class="ot">&gt;</span> interleave xs [] <span class="fu">=</span> xs
 <span class="ot">&gt;</span> interleave (x<span class="fu">:</span>xs) (y<span class="fu">:</span>ys) <span class="fu">=</span> x<span class="fu">:</span>y<span class="fu">:</span>interleave xs ys</code></pre>
 <p>Всего три строки, где две отведены под очевидные базовые случаи. Что может быть проще? Однако, в этой реализации есть едва уловимый изъян - она черезчур строгая.</p>
-<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> take <span class="dv">3</span> <span class="fu">$</span> interleave [<span class="dv">1</span>,<span class="dv">2</span>] (<span class="dv">3</span><span class="fu">:</span>error <span class="st">&quot;Oops!&quot;</span>)
-[<span class="dv">1</span>,<span class="dv">3</span><span class="fu">***</span> <span class="dt">Exception</span><span class="fu">:</span> <span class="dt">Oops</span><span class="fu">!</span></code></pre>
-<p>Что произошло? Мы сопоставили с образцом “[]” список (error “Oops!”), в то время как это было ненужно. Как это справить? Просто отложить сопоставление с паттерном для второго списка до тех пор, пока его элементы действительно не понадобятся.</p>
-<pre class="sourceCode haskell"><code class="sourceCode haskell">interleave' [] ys <span class="fu">=</span> ys
-interleave' (x<span class="fu">:</span>xs) ys <span class="fu">=</span> x <span class="fu">:</span> (
-  <span class="kw">case</span> ys <span class="kw">of</span>
-    []     <span class="ot">-&gt;</span> xs
-    (y<span class="fu">:</span>ys) <span class="ot">-&gt;</span> y <span class="fu">:</span> interleave' xs ys
+<pre><code>*Main&gt; take 3 $ interleave [1,2] (3:error &quot;Oops!&quot;)
+[1,3*** Exception: Oops!</code></pre>
+<p>Что произошло? Мы сопоставили с образцом <code>[]</code> список <code>error &quot;Oops!&quot;</code>, в то время как это было ненужно. Как это справить? Просто отложить сопоставление с паттерном для второго списка до тех пор, пока его элементы действительно не понадобятся.</p>
+<pre><code>interleave' [] ys = ys
+interleave' (x:xs) ys = x : (
+  case ys of
+    []     -&gt; xs
+    (y:ys) -&gt; y : interleave' xs ys
   )</code></pre>
-<p>Или так (если заметить, что выражение в скобках есть вызов interleave’ cо списками ys и xs), что элегантнее:</p>
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> interleave' []     ys <span class="fu">=</span> ys
+<p>Или так (если заметить, что выражение в скобках есть вызов <code>interleave'</code> cо списками <code>ys</code> и <code>xs</code>), что элегантнее:</p>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; interleave' ::</span> [a] <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> [a]
+<span class="ot">&gt;</span> interleave' []     ys <span class="fu">=</span> ys
 <span class="ot">&gt;</span> interleave' (x<span class="fu">:</span>xs) ys <span class="fu">=</span> x<span class="fu">:</span>interleave' ys xs</code></pre>
 <p>Пример с ошибкой, бросаемой хвостом второго списка, кажется надуманным, ведь обычно мы производим вычисления над вполне определенными и конечными списками (например, данными, прочтенными с жесткого диска). Однако, все меняется, когда мы пытаемся оперировать бесконечными списками, в этому случае нужно очень аккуратно следить за тем, что форсится, что - нет.</p>
 <p>С выражением типа</p>
-<pre class="sourceCode haskell"><code class="sourceCode haskell">[<span class="dv">1</span><span class="fu">..</span>] <span class="ot">`interleave`</span> [<span class="dv">1</span><span class="fu">..</span>]</code></pre>
-<p>все в порядке, но что если, второй аргумент в interleave сам в свою очередь вычисляется через применение interleave? Например:</p>
-<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">let</span> x <span class="fu">=</span> take <span class="dv">1</span> <span class="fu">$</span> foldr1 interleave (repeat [<span class="dv">1</span><span class="fu">..</span>])</code></pre>
-<p>что разворачивается в бесконечную право-вложенную последовательность применений interleave к [1..]:</p>
-<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">let</span> x <span class="fu">=</span> take <span class="dv">1</span> <span class="fu">$</span> [<span class="dv">1</span><span class="fu">..</span>] <span class="ot">`interleave`</span> (
-                 [<span class="dv">1</span><span class="fu">..</span>] <span class="ot">`interleave`</span> (
-                 [<span class="dv">1</span><span class="fu">..</span>] <span class="ot">`interleave`</span> <span class="fu">...</span>))</code></pre>
-<p>Для того, чтобы вычислить x достаточно зафорсить первый [1..] до конструктора (:), но наивная версия interleave вместе с тем зафорсит до конструктора списка и второй аргумент interleave:</p>
-<pre class="sourceCode haskell"><code class="sourceCode haskell">                 ([<span class="dv">1</span><span class="fu">..</span>] <span class="ot">`interleave`</span> (
-                  [<span class="dv">1</span><span class="fu">..</span>] <span class="ot">`interleave`</span> <span class="fu">...</span>))</code></pre>
+<pre><code>[1..] `interleave` [1..]</code></pre>
+<p>все в порядке, но что если, второй аргумент в <code>interleave</code> сам в свою очередь вычисляется через применение <code>interleave</code>? Например:</p>
+<pre><code>let x = take 1 $ foldr1 interleave (repeat [1..])</code></pre>
+<p>что разворачивается в бесконечную право-вложенную последовательность применений <code>interleave</code> к <code>[1..]</code>:</p>
+<pre><code>let x = take 1 $ [1..] `interleave` (
+                 [1..] `interleave` (
+                 [1..] `interleave` ...))</code></pre>
+<p>Для того, чтобы вычислить <code>x</code> достаточно зафорсить первый <code>[1..]</code> до конструктора <code>(:)</code>, но наивная версия <code>interleave</code> вместе с тем зафорсит до конструктора списка и второй аргумент <code>interleave</code>:</p>
+<pre><code>                 ([1..] `interleave` (
+                  [1..] `interleave` ...))</code></pre>
 <p>и так далее… В итоге, программа зависает в бесконечном цикле.</p>
 <p>Можно переписать этот пример несколько иначе:</p>
-<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">let</span> x <span class="fu">=</span> take <span class="dv">1</span> <span class="fu">$</span> <span class="kw">let</span> y <span class="fu">=</span> [<span class="dv">1</span><span class="fu">..</span>] <span class="ot">`interleave`</span> y
-                 <span class="kw">in</span>  y</code></pre>
+<pre><code>let x = take 1 $ let y = [1..] `interleave` y
+                 in  y</code></pre>
 <p>что семантически то же самое, но зависать вычисление x будет по слегка иной причине.</p>
-<p>К счастью, наша максимально ленивая версия interleave’ решает эти зависания и ‘x’ благополучно вычисляется до [1].</p>
-<p>interleave’ можно использовать как замену (++) в случае генерации элементов счетного множества, при этом использование interleave’ дает гарантии, что каждый элемент множества рано или поздно встретится в результирующей последовательности.</p>
+<p>К счастью, наша максимально ленивая версия <code>interleave'</code> решает эти зависания и <code>x</code> благополучно вычисляется до <code>[1]</code>.</p>
+<p><code>interleave'</code> можно использовать как замену <code>(++)</code> в случае генерации элементов счетного множества, при этом использование <code>interleave'</code> дает гарантии, что каждый элемент множества рано или поздно встретится в результирующей последовательности.</p>
 <p>Пример с сериализацией бесконечной таблицы:</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; table2D ::</span> [[(<span class="dt">Int</span>,<span class="dt">Int</span>)]]
 <span class="ot">&gt;</span> table2D <span class="fu">=</span> map (zip [<span class="dv">1</span><span class="fu">..</span>] <span class="fu">.</span> repeat) [<span class="dv">1</span><span class="fu">..</span>]</code></pre>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; serializeTable ::</span> [[a]] <span class="ot">-&gt;</span> [a]
 <span class="ot">&gt;</span> serializeTable <span class="fu">=</span> foldr1 interleave'</code></pre>
-<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> take <span class="dv">10</span> <span class="fu">$</span> serializeTable table2D
-[(<span class="dv">1</span>,<span class="dv">1</span>),(<span class="dv">1</span>,<span class="dv">2</span>),(<span class="dv">2</span>,<span class="dv">1</span>),(<span class="dv">1</span>,<span class="dv">3</span>),(<span class="dv">3</span>,<span class="dv">1</span>),(<span class="dv">2</span>,<span class="dv">2</span>),(<span class="dv">4</span>,<span class="dv">1</span>),(<span class="dv">1</span>,<span class="dv">4</span>),(<span class="dv">5</span>,<span class="dv">1</span>),(<span class="dv">3</span>,<span class="dv">2</span>)]</code></pre>
+<pre><code>*Main&gt; take 10 $ serializeTable table2D
+[(1,1),(1,2),(2,1),(1,3),(3,1),(2,2),(4,1),(1,4),(5,1),(3,2)]</code></pre>
 <p>Это похоже на диагонализацию Кантора, однако, не является ею, потому что элементы первого ряда в исходной таблице встречаются в результирующей последовательности в два раза чаще, чем элементы второго ряда, в четыре раза чаще, чем третьего, в восемь, чем четвертого и так далее по степеням двойки.</p>
 <p>Тем не менее, эта программа может точно так же может служить доказательством счетности множества рациональных чисел.</p>
-<p>Еще один пример использования interleave’ - это генерация выражений в некотором языке.</p>
+<p>Еще один пример использования <code>interleave'</code> - это генерация выражений в некотором языке.</p>
 <p>Термы языка представляются объектами типа:</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">Exp</span> <span class="fu">=</span> <span class="dt">Lit</span> <span class="dt">Int</span>
 <span class="ot">&gt;</span>          <span class="fu">|</span> <span class="dt">Add</span> <span class="dt">Exp</span> <span class="dt">Exp</span>
@@ -99,23 +100,23 @@ interleave' (x<span class="fu">:</span>xs) ys <span class="fu">=</span> x <span 
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; genExp ::</span> [<span class="dt">Exp</span>]
 <span class="ot">&gt;</span> genExp <span class="fu">=</span> map <span class="dt">Lit</span> [<span class="dv">1</span><span class="fu">..</span><span class="dv">3</span>] <span class="ot">`interleave'`</span>
 <span class="ot">&gt;</span>          map (uncurry <span class="dt">Add</span>) (genExp <span class="ot">`cartesian`</span> genExp)</code></pre>
-<p>где cartesian перемножает множества и сериализует результат, подобно тому, как это делалось в serializeTable:</p>
+<p>где <code>cartesian</code> перемножает множества и сериализует результат, подобно тому, как это делалось в <code>serializeTable</code>:</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; cartesian ::</span> [a] <span class="ot">-&gt;</span> [b] <span class="ot">-&gt;</span> [(a,b)]
-<span class="ot">&gt;</span> cartesian []     ys <span class="fu">=</span> []
+<span class="ot">&gt;</span> cartesian []     _  <span class="fu">=</span> []
 <span class="ot">&gt;</span> cartesian (x<span class="fu">:</span>xs) ys <span class="fu">=</span> map (x,) ys <span class="ot">`interleave'`</span>
 <span class="ot">&gt;</span>                       cartesian xs ys</code></pre>
 <p>В итоге:</p>
-<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> mapM_ (putStrLn <span class="fu">.</span> show) <span class="fu">$</span> take <span class="dv">10</span> genExp
-<span class="dv">1</span>
-(<span class="dv">1</span><span class="fu">+</span><span class="dv">1</span>)
-<span class="dv">2</span>
-((<span class="dv">1</span><span class="fu">+</span><span class="dv">1</span>)<span class="fu">+</span><span class="dv">1</span>)
-<span class="dv">3</span>
-(<span class="dv">1</span><span class="fu">+</span>(<span class="dv">1</span><span class="fu">+</span><span class="dv">1</span>))
-(<span class="dv">2</span><span class="fu">+</span><span class="dv">1</span>)
-(<span class="dv">1</span><span class="fu">+</span><span class="dv">2</span>)
-((<span class="dv">1</span><span class="fu">+</span><span class="dv">1</span>)<span class="fu">+</span>(<span class="dv">1</span><span class="fu">+</span><span class="dv">1</span>))
-(<span class="dv">1</span><span class="fu">+</span>((<span class="dv">1</span><span class="fu">+</span><span class="dv">1</span>)<span class="fu">+</span><span class="dv">1</span>))</code></pre>
+<pre><code>*Main&gt; mapM_ (putStrLn . show) $ take 10 genExp
+1
+(1+1)
+2
+((1+1)+1)
+3
+(1+(1+1))
+(2+1)
+(1+2)
+((1+1)+(1+1))
+(1+((1+1)+1))</code></pre>
 
  <div id="disqus_thread"></div>
     <script type="text/javascript">

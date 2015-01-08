@@ -68,8 +68,8 @@
 <span class="ot">&gt;</span>       <span class="fu">|</span> otherwise
 <span class="ot">&gt;</span>       <span class="fu">=</span> <span class="kw">let</span> (t,q') <span class="fu">=</span> dequeue q
 <span class="ot">&gt;</span>         <span class="kw">in</span>  t <span class="fu">:</span> go (enqueueMany (ch t) q')</code></pre>
-<p>‘levelOrderQueue’ выдает список поддеревьев в порядке обхода в ширину т.е. поуровнево.</p>
-<p>Собственно поиск в ширину параметризуется функцией, которая перечисляет поддеревья в подрядке обхода в ширину (например ‘levelOrderQueue’), и предикатом поиска ‘pred’:</p>
+<p><code>levelOrderQueue</code> выдает список поддеревьев в порядке обхода в ширину т.е. поуровнево.</p>
+<p>Собственно поиск в ширину параметризуется функцией, которая перечисляет поддеревья в подрядке обхода в ширину (например <code>levelOrderQueue</code>), и предикатом поиска <code>pred</code>:</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; bfs ::</span> (forall a<span class="fu">.</span> <span class="dt">Tree</span> a <span class="ot">-&gt;</span> [<span class="dt">Tree</span> a])
 <span class="ot">&gt;</span>     <span class="ot">-&gt;</span> (<span class="dt">Tree</span> (<span class="dt">Path</span> a) <span class="ot">-&gt;</span> <span class="dt">Bool</span>)
 <span class="ot">&gt;</span>     <span class="ot">-&gt;</span> <span class="dt">Tree</span> a
@@ -85,9 +85,9 @@
 <span class="ot">&gt;</span>         descend path (<span class="dt">Tree</span> a ts) <span class="fu">=</span>
 <span class="ot">&gt;</span>           <span class="kw">let</span> path' <span class="fu">=</span> a<span class="fu">:</span>path
 <span class="ot">&gt;</span>           <span class="kw">in</span>  <span class="dt">Tree</span> path' (map (descend path') ts)</code></pre>
-<p>Как таковой ‘bfs’ нам не сильно интересен в отличие от различных вариантов реализации ‘levelOrder’.</p>
-<p>‘levelOrderQueue’ использует наиболее простую реализацию очереди через список, которая имеет O(n) сложность для операции вставки в конец - ‘enqueue’.</p>
-<p>Можно было бы реализовать очередь через два стека - операции вставки и извлечения из очереди занимали бы амортизированное O(1). Что хорошо, но хотелось бы настоящей константы.</p>
+<p>Как таковой <code>bfs</code> нам не сильно интересен в отличие от различных вариантов реализации <code>levelOrder</code>.</p>
+<p><code>levelOrderQueue</code> использует наиболее простую реализацию очереди через список, которая имеет <em>O(n)</em> сложность для операции вставки в конец - <code>enqueue</code>.</p>
+<p>Можно было бы реализовать очередь через два стека - операции вставки и извлечения из очереди занимали бы амортизированное <em>O(1)</em>. Что хорошо, но хотелось бы настоящей константы.</p>
 <p>Добавим в алгоритм отладочную печать очереди:</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; levelOrderQueueTrace ::</span> <span class="dt">Show</span> a <span class="ot">=&gt;</span> <span class="dt">Tree</span> a <span class="ot">-&gt;</span> [<span class="dt">Tree</span> a]
 <span class="ot">&gt;</span> levelOrderQueueTrace t <span class="fu">=</span> go (enqueue t emptyQueue)
@@ -106,38 +106,38 @@
 <span class="ot">&gt;</span>       <span class="fu">=</span> <span class="kw">let</span> (t,q') <span class="fu">=</span> dequeue q
 <span class="ot">&gt;</span>         <span class="kw">in</span>  t <span class="fu">:</span> go (enqueueMany (ch t) q')</code></pre>
 <p>и рассмотрим, какие значения принимает очередь в ходе выполнения алгоритма на полном бинарном дереве высоты 3:</p>
-<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> print <span class="fu">$</span> tracesFirst <span class="fu">$</span> map get <span class="fu">$</span> levelOrderQueueTrace <span class="fu">$</span> binTree <span class="dv">3</span>
-enqueue [<span class="dv">1</span>]
+<pre><code>*Main&gt; print $ tracesFirst $ map get $ levelOrderQueueTrace $ binTree 3
+enqueue [1]
 dequeue []
-enqueue [<span class="dv">2</span>]
-enqueue [<span class="dv">2</span>,<span class="dv">3</span>]
-dequeue [<span class="dv">3</span>]
-enqueue [<span class="dv">3</span>,<span class="dv">4</span>]
-enqueue [<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>]
-dequeue [<span class="dv">4</span>,<span class="dv">5</span>]
-enqueue [<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>]
-enqueue [<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">7</span>]
-dequeue [<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">7</span>]
-dequeue [<span class="dv">6</span>,<span class="dv">7</span>]
-dequeue [<span class="dv">7</span>]
+enqueue [2]
+enqueue [2,3]
+dequeue [3]
+enqueue [3,4]
+enqueue [3,4,5]
+dequeue [4,5]
+enqueue [4,5,6]
+enqueue [4,5,6,7]
+dequeue [5,6,7]
+dequeue [6,7]
+dequeue [7]
 dequeue []
-[<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">7</span>]</code></pre>
-<p>После выравнивания становится очевидно, что очередь принимает значения некоторого подотрезка списка деревьев в breadth-first порядке. Начало и конец отрезка смещаются вправо при каждом вызове ‘dequeue’ и ‘enqueue’ соответственно.</p>
-<pre class="sourceCode haskell"><code class="sourceCode haskell">enqueue [<span class="dv">1</span>]
+[1,2,3,4,5,6,7]</code></pre>
+<p>После выравнивания становится очевидно, что очередь принимает значения некоторого подотрезка списка деревьев в breadth-first порядке. Начало и конец отрезка смещаются вправо при каждом вызове <code>dequeue</code> и <code>enqueue</code> соответственно.</p>
+<pre><code>enqueue [1]
 dequeue  []
-enqueue   [<span class="dv">2</span>]
-enqueue   [<span class="dv">2</span>,<span class="dv">3</span>]
-dequeue     [<span class="dv">3</span>]
-enqueue     [<span class="dv">3</span>,<span class="dv">4</span>]
-enqueue     [<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>]
-dequeue       [<span class="dv">4</span>,<span class="dv">5</span>]
-enqueue       [<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>]
-enqueue       [<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">7</span>]
-dequeue         [<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">7</span>]
-dequeue           [<span class="dv">6</span>,<span class="dv">7</span>]
-dequeue             [<span class="dv">7</span>]
+enqueue   [2]
+enqueue   [2,3]
+dequeue     [3]
+enqueue     [3,4]
+enqueue     [3,4,5]
+dequeue       [4,5]
+enqueue       [4,5,6]
+enqueue       [4,5,6,7]
+dequeue         [5,6,7]
+dequeue           [6,7]
+dequeue             [7]
 dequeue              []
-        [<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">7</span>]</code></pre>
+        [1,2,3,4,5,6,7]</code></pre>
 <p>Так почему бы не совместить результирующий список деревьев и очередь в один список?</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; levelOrderCorecQueue ::</span> <span class="dt">Tree</span> a <span class="ot">-&gt;</span> [<span class="dt">Tree</span> a]
 <span class="ot">&gt;</span> levelOrderCorecQueue t <span class="fu">=</span> queue
@@ -145,9 +145,9 @@ dequeue              []
 <span class="ot">&gt;</span>     queue <span class="fu">=</span> t <span class="fu">:</span> go queue
 <span class="ot">&gt;</span>     go [] <span class="fu">=</span> []
 <span class="ot">&gt;</span>     go (<span class="dt">Tree</span> _ ts <span class="fu">:</span> rest) <span class="fu">=</span> ts <span class="fu">++</span> go rest</code></pre>
-<p>Указатели на начало и конец очереди здесь поддерживаются неявно в функции ‘go’. В ней аргумент обозначает начало очереди, а результат - конец. Сопоставление с образцом (:) - аналог ‘dequeue’, (t:) - ‘enqueue’, (ts++) - ‘enqueueMany ts’.</p>
-<p>Что интересно, значение аргумента функции ‘go’ зависит от результата этой функции за счет value recursion ‘queue’.</p>
-<p>‘levelOrderCorecQueue’ корректно выдаст первые ‘n’ поддеревьев, где ‘n’ - количество вершин в дереве, но после этого ghc просто зависнет. Сопоставление по образцу [] в ‘go’ спровоцирует очередной вызов ‘go’ и так до бесконечности.</p>
+<p>Указатели на начало и конец очереди здесь поддерживаются неявно в функции <code>go</code>. В ней аргумент обозначает начало очереди, а результат - конец. Сопоставление с образцом <code>(:)</code> - аналог <code>dequeue</code>, <code>(t:)</code> - <code>enqueue</code>, <code>(ts++)</code> - <code>enqueueMany ts</code>.</p>
+<p>Что интересно, значение аргумента функции <code>go</code> зависит от результата этой функции за счет <em>value recursion</em> в <code>queue</code>.</p>
+<p><code>levelOrderCorecQueue</code> корректно выдаст первые <code>n</code> поддеревьев, где <code>n</code> - количество вершин в дереве, но после этого ghc просто зависнет. Сопоставление по образцу <code>[]</code> в <code>go</code> спровоцирует очередной вызов <code>go</code> и так до бесконечности.</p>
 <p>Можно брать ровно столько поддеревьев, сколько их в дереве:</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; levelOrderCorecQueue' ::</span> <span class="dt">Tree</span> a <span class="ot">-&gt;</span> [<span class="dt">Tree</span> a]
 <span class="ot">&gt;</span> levelOrderCorecQueue' t <span class="fu">=</span> take (size t)
@@ -161,9 +161,9 @@ dequeue              []
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>     queue <span class="fu">=</span> t <span class="fu">:</span> go <span class="dv">1</span> queue</code></pre>
 <p>Если очередь пуста, алгоритм завершается.</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>     go <span class="dv">0</span> _ <span class="fu">=</span> []</code></pre>
-<p>Иначе из очереди извлекается один элемент (-1) и добавляется (length ts) новых к (n) уже имеющимся.</p>
+<p>Иначе из очереди извлекается один элемент <em>(-1)</em> и добавляется <em>(length ts)</em> новых к <em>(n)</em> уже имеющимся.</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>     go n (<span class="dt">Tree</span> a ts <span class="fu">:</span> rest) <span class="fu">=</span> ts <span class="fu">++</span> go (n <span class="fu">-</span> <span class="dv">1</span> <span class="fu">+</span> length ts) rest</code></pre>
-<p>Такая очередь называется корекурсивной очередью. Она описана в отличном туториале http://www.melding-monads.com/files/CorecQueues.pdf, где также предложен способ оформить такую очередь в typeclass ‘MonadQueue’ с функциями ‘enqueue’ и ‘dequeue’.</p>
+<p>Такая очередь называется корекурсивной очередью. Она описана в отличном туториале <a href="http://www.melding-monads.com/files/CorecQueues.pdf">Lloyd Allison’s Corecursive Queues: Why Continuations Matter</a>, где также предложен способ оформить такую очередь в typeclass <code>MonadQueue</code> с функциями <code>enqueue</code> и <code>dequeue</code>.</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; sampleTree ::</span> <span class="dt">Tree</span> <span class="dt">Int</span>
 <span class="ot">&gt;</span> sampleTree <span class="fu">=</span>
 <span class="ot">&gt;</span>   <span class="dt">Tree</span> <span class="dv">1</span>

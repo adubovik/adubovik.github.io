@@ -46,13 +46,12 @@
 <span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Control.Arrow</span>
 <span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Control.Monad</span>
 <span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Control.Applicative</span>
-<span class="ot">&gt;</span> <span class="kw">import qualified</span> <span class="dt">Data.Map</span> <span class="kw">as</span> <span class="dt">Map</span>
-<span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Data.Ratio</span></code></pre>
-<p>Недавно <span class="citation">@MAH3IOK</span> поделился со мной интересным функциональным алгоритмом генерации случайной перестановки списка. Алгоритм примечательным образом схож с алгоритмом сортировки слиянием (на котором, кстати, основан sort из Data.List [http://hackage.haskell.org/package/base-4.7.0.1/docs/src/Data-List.html#sort]) и заключается в следующем:</p>
+<span class="ot">&gt;</span> <span class="kw">import qualified</span> <span class="dt">Data.Map</span> <span class="kw">as</span> <span class="dt">Map</span></code></pre>
+<p>Недавно <a href="https://twitter.com/mah3iok">@MAH3IOK</a> поделился со мной интересным функциональным алгоритмом генерации случайной перестановки списка. Алгоритм примечательным образом схож с алгоритмом сортировки слиянием (на котором, кстати, основан <code>sort</code> из <a href="http://hackage.haskell.org/package/base-4.7.0.1/docs/src/Data-List.html#sort">Data.List</a>) и заключается в следующем:</p>
 <ol style="list-style-type: decimal">
-<li>исходный список превращается в список одноэлементных списков (map (:[]))</li>
-<li>смежные списки в получившемся списке сливаются (функция merge) - получается список списков в два раза меньшей длины</li>
-<li>и так до тех пор, пока не остается один список (функция tillSingletonM) - он и будет случайной перестановкой</li>
+<li>исходный список превращается в список одноэлементных списков (<code>map (:[])</code>)</li>
+<li>смежные списки в получившемся списке сливаются (функция <code>merge</code>) - получается список списков в два раза меньшей длины</li>
+<li>и так до тех пор, пока не остается один список (функция <code>tillSingletonM</code>) - он и будет случайной перестановкой.</li>
 </ol>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; randomShuffle ::</span> forall m a<span class="fu">.</span> (<span class="dt">Functor</span> m, <span class="dt">Random</span> m) <span class="ot">=&gt;</span> [a] <span class="ot">-&gt;</span> m [a]
 <span class="ot">&gt;</span> randomShuffle <span class="fu">=</span> tillSingletonM step <span class="fu">.</span> map (<span class="fu">:</span>[])
@@ -76,63 +75,67 @@
 <span class="ot">&gt;</span>        rnd <span class="ot">&lt;-</span> random (<span class="dv">1</span>, nx<span class="fu">+</span>ny)
 <span class="ot">&gt;</span>        <span class="kw">if</span> rnd <span class="fu">&lt;=</span> nx
 <span class="ot">&gt;</span>        <span class="kw">then</span> (xh<span class="fu">:</span>) <span class="fu">&lt;$&gt;</span> runMerge (nx<span class="fu">-</span><span class="dv">1</span>) ny xt y
-<span class="ot">&gt;</span>        <span class="kw">else</span> (yh<span class="fu">:</span>) <span class="fu">&lt;$&gt;</span> runMerge nx (ny<span class="fu">-</span><span class="dv">1</span>) x yt</code></pre>
+<span class="ot">&gt;</span>        <span class="kw">else</span> (yh<span class="fu">:</span>) <span class="fu">&lt;$&gt;</span> runMerge  nx (ny<span class="fu">-</span><span class="dv">1</span>) x yt</code></pre>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; tillSingletonM ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> ([a] <span class="ot">-&gt;</span> m [a]) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> m a
 <span class="ot">&gt;</span> tillSingletonM f ls
 <span class="ot">&gt;</span>   <span class="fu">|</span> [x] <span class="ot">&lt;-</span> ls <span class="fu">=</span> return x
 <span class="ot">&gt;</span>   <span class="fu">|</span> otherwise <span class="fu">=</span> (f <span class="fu">&gt;=&gt;</span> tillSingletonM f) ls</code></pre>
-<p>Сложность в точности как у merge sort - O(n*log(n)). Функция работает в монаде, поддерживающей интерфейс работы со случайными числами:</p>
+<p>Сложность в точности как у merge sort - <em>O(n*log(n))</em>. Функция работает в монаде, поддерживающей интерфейс работы со случайными числами:</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">class</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">Random</span> m <span class="kw">where</span>
 <span class="ot">&gt;   random ::</span> (<span class="dt">Int</span>,<span class="dt">Int</span>) <span class="ot">-&gt;</span> m <span class="dt">Int</span></code></pre>
-<p>Для IO монады она определяется через randomRIO из System.Random:</p>
+<p>Для IO монады она определяется через <code>randomRIO</code> из <code>System.Random</code>:</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Random</span> <span class="dt">IO</span> <span class="kw">where</span>
 <span class="ot">&gt;</span>   random <span class="fu">=</span> Random.randomRIO</code></pre>
 <p>Посмотрим, что же генерирует алгоритм:</p>
-<pre class="sourceCode haskell"><code class="sourceCode haskell">ghci<span class="fu">&gt;</span> replicateM_ <span class="dv">5</span> <span class="fu">$</span> randomShuffle [<span class="dv">1</span><span class="fu">..</span><span class="dv">5</span>] <span class="fu">&gt;&gt;=</span> print
-[<span class="dv">2</span>,<span class="dv">5</span>,<span class="dv">4</span>,<span class="dv">3</span>,<span class="dv">1</span>]
-[<span class="dv">4</span>,<span class="dv">3</span>,<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">5</span>]
-[<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">5</span>,<span class="dv">4</span>,<span class="dv">3</span>]
-[<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">3</span>]
-[<span class="dv">5</span>,<span class="dv">1</span>,<span class="dv">4</span>,<span class="dv">2</span>,<span class="dv">3</span>]</code></pre>
+<pre><code>*Main&gt; replicateM_ 5 $ randomShuffle [1..5] &gt;&gt;= print
+[2,5,4,3,1]
+[4,3,2,1,5]
+[1,2,5,4,3]
+[4,5,2,1,3]
+[5,1,4,2,3]</code></pre>
 <p>Что ж, весьма похоже на случайные перестановки!</p>
-<p>Но как убедиться в том, что каждая из n! перестановок имеет одну и ту же вероятность выпасть, равную 1/n! ? Из алгоритма это не сразу очевидно и доказательство требует некоторых умственных усилий, которых нам, конечно, не хотелось бы прилагать.</p>
+<p>Но как убедиться в том, что каждая из <em>n!</em> перестановок имеет одну и ту же вероятность выпасть, равную <em>1/n!</em> ? Из алгоритма это не сразу очевидно и доказательство требует некоторых умственных усилий, которых нам, конечно, не хотелось бы прилагать.</p>
 <p>Можно сгенерировать много перестановок подряд и посмотреть, сколько раз выпала каждая перестановка. По закону больших чисел при всё большем количестве сгенерированных перестановок, мы должны всё ближе приближаться к теоретической вероятности.</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; calcProb ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()
 <span class="ot">&gt;</span> calcProb m n <span class="fu">=</span> <span class="kw">do</span>
 <span class="ot">&gt;</span>   permutations <span class="ot">&lt;-</span> replicateM n (randomShuffle [<span class="dv">1</span><span class="fu">..</span>m])
-<span class="ot">&gt;</span>   <span class="kw">let</span> hist <span class="fu">=</span> Map.unionsWith (<span class="fu">+</span>) <span class="fu">$</span> map (flip Map.singleton <span class="dv">1</span>) permutations
+<span class="ot">&gt;</span>   <span class="kw">let</span> hist <span class="fu">=</span> Map.toList
+<span class="ot">&gt;</span>            <span class="fu">.</span> Map.unionsWith (<span class="fu">+</span>)
+<span class="ot">&gt;</span>            <span class="fu">.</span> map (flip Map.singleton <span class="dv">1</span>)
+<span class="ot">&gt;</span>            <span class="fu">$</span> permutations
 <span class="ot">&gt;</span>       toProb x <span class="fu">=</span> fromIntegral x <span class="fu">/</span> fromIntegral n
-<span class="ot">&gt;</span>   mapM_ (\(p,r) <span class="ot">-&gt;</span> putStrLn <span class="fu">$</span> show p <span class="fu">++</span> <span class="st">&quot; &quot;</span> <span class="fu">++</span> show (toProb r)) <span class="fu">$</span> Map.toList hist</code></pre>
-<pre class="sourceCode haskell"><code class="sourceCode haskell">ghci<span class="fu">&gt;</span> calcProb <span class="dv">4</span> <span class="dv">10</span><span class="fu">^</span><span class="dv">6</span>
-[<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>] <span class="fl">4.1701e-2</span>
-[<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">4</span>,<span class="dv">3</span>] <span class="fl">4.1917e-2</span>
-[<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">2</span>,<span class="dv">4</span>] <span class="fl">4.1909e-2</span>
-[<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">2</span>] <span class="fl">4.1402e-2</span>
-[<span class="dv">1</span>,<span class="dv">4</span>,<span class="dv">2</span>,<span class="dv">3</span>] <span class="fl">4.1642e-2</span>
-[<span class="dv">1</span>,<span class="dv">4</span>,<span class="dv">3</span>,<span class="dv">2</span>] <span class="fl">4.1845e-2</span>
-[<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">4</span>] <span class="fl">4.1471e-2</span>
-[<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">4</span>,<span class="dv">3</span>] <span class="fl">4.1743e-2</span>
-[<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">1</span>,<span class="dv">4</span>] <span class="fl">4.1639e-2</span>
-[<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">1</span>] <span class="fl">4.1831e-2</span>
-[<span class="dv">2</span>,<span class="dv">4</span>,<span class="dv">1</span>,<span class="dv">3</span>] <span class="fl">4.1157e-2</span>
-[<span class="dv">2</span>,<span class="dv">4</span>,<span class="dv">3</span>,<span class="dv">1</span>] <span class="fl">4.1859e-2</span>
-[<span class="dv">3</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">4</span>] <span class="fl">4.141e-2</span>
-[<span class="dv">3</span>,<span class="dv">1</span>,<span class="dv">4</span>,<span class="dv">2</span>] <span class="fl">4.1428e-2</span>
-[<span class="dv">3</span>,<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">4</span>] <span class="fl">4.1654e-2</span>
-[<span class="dv">3</span>,<span class="dv">2</span>,<span class="dv">4</span>,<span class="dv">1</span>] <span class="fl">4.1821e-2</span>
-[<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">1</span>,<span class="dv">2</span>] <span class="fl">4.1729e-2</span>
-[<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">2</span>,<span class="dv">1</span>] <span class="fl">4.1764e-2</span>
-[<span class="dv">4</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>] <span class="fl">4.1572e-2</span>
-[<span class="dv">4</span>,<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">2</span>] <span class="fl">4.1393e-2</span>
-[<span class="dv">4</span>,<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">3</span>] <span class="fl">4.1909e-2</span>
-[<span class="dv">4</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">1</span>] <span class="fl">4.1654e-2</span>
-[<span class="dv">4</span>,<span class="dv">3</span>,<span class="dv">1</span>,<span class="dv">2</span>] <span class="fl">4.1812e-2</span>
-[<span class="dv">4</span>,<span class="dv">3</span>,<span class="dv">2</span>,<span class="dv">1</span>] <span class="fl">4.1738e-2</span>
-ghci<span class="fu">&gt;</span> <span class="dv">1</span><span class="fu">/</span><span class="fl">24.0</span>
-<span class="fl">4.1666666666666664e-2</span></code></pre>
+<span class="ot">&gt;</span>   forM_ hist <span class="fu">$</span> \(p,r) <span class="ot">-&gt;</span>
+<span class="ot">&gt;</span>     putStrLn <span class="fu">$</span> show p <span class="fu">++</span> <span class="st">&quot; &quot;</span> <span class="fu">++</span> show (toProb r)</code></pre>
+<pre><code>*Main&gt; calcProb 4 10^6
+[1,2,3,4] 4.1701e-2
+[1,2,4,3] 4.1917e-2
+[1,3,2,4] 4.1909e-2
+[1,3,4,2] 4.1402e-2
+[1,4,2,3] 4.1642e-2
+[1,4,3,2] 4.1845e-2
+[2,1,3,4] 4.1471e-2
+[2,1,4,3] 4.1743e-2
+[2,3,1,4] 4.1639e-2
+[2,3,4,1] 4.1831e-2
+[2,4,1,3] 4.1157e-2
+[2,4,3,1] 4.1859e-2
+[3,1,2,4] 4.141e-2
+[3,1,4,2] 4.1428e-2
+[3,2,1,4] 4.1654e-2
+[3,2,4,1] 4.1821e-2
+[3,4,1,2] 4.1729e-2
+[3,4,2,1] 4.1764e-2
+[4,1,2,3] 4.1572e-2
+[4,1,3,2] 4.1393e-2
+[4,2,1,3] 4.1909e-2
+[4,2,3,1] 4.1654e-2
+[4,3,1,2] 4.1812e-2
+[4,3,2,1] 4.1738e-2
+*Main&gt; 1/24.0
+4.1666666666666664e-2</code></pre>
 <p>Выглядит неплохо. Но сравните с ожидаемой вероятностью - погрешность всё еще во втором знаке после запятой, и это с миллионом перестановок всего лишь четырехэлементного списка! Неприемлимо.</p>
 <p>Ок… Как насчет того, чтобы в моменте генерации случайного числа разделиться на две вселенные, в одной из которых выпала решка, а в другой - орел? При этом мы постраемся следить за накапливаемой вероятностью, т.е. вероятность выпадения решки будет домножена на вероятности последующих событий в этой вселенной (в точности по формуле условной вероятности). Тогда мы сможем получить не просто одну случайную перестановку, а распределение случайной перестановки, т.е. список возможных перестановок с вероятностью их генерации.</p>
-<p>И именно так работает вероятностная монада (см. например [Functional Pearls: Probabilistic Functional Programming in Haskell (Matrin Erwig et al.)])!</p>
+<p>И именно так работает вероятностная монада (см. например <a href="http://web.engr.oregonstate.edu/~erwig/papers/PFP_JFP06.pdf">Functional Pearls: Probabilistic Functional Programming in Haskell</a>)!</p>
 <p>Определим тип объекта, обозначающего распределение:</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">newtype</span> <span class="dt">DistBase</span> a <span class="fu">=</span> <span class="dt">DistBase</span> {<span class="ot"> runDistBase ::</span> <span class="dt">Map.Map</span> a <span class="dt">Rational</span> }</code></pre>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Show</span> a <span class="ot">=&gt;</span> <span class="dt">Show</span> (<span class="dt">DistBase</span> a) <span class="kw">where</span>
@@ -140,7 +143,7 @@ ghci<span class="fu">&gt;</span> <span class="dv">1</span><span class="fu">/</sp
 <span class="ot">&gt;</span>     unlines <span class="fu">$</span>
 <span class="ot">&gt;</span>     map (\(x,y) <span class="ot">-&gt;</span> show x <span class="fu">++</span> <span class="st">&quot;: &quot;</span> <span class="fu">++</span> show y) <span class="fu">$</span>
 <span class="ot">&gt;</span>     Map.toList m</code></pre>
-<p>Попытаемся определить реализацию Monad и Random для DistBase, ведь нам хотелось бы оставить функцию randomShuffle без изменений и получить распределение случайной перестановки, просто вычислив функцию в монаде DistBase.</p>
+<p>Попытаемся определить реализацию <code>Monad</code> и <code>Random</code> для <code>DistBase</code>, ведь нам хотелось бы оставить функцию <code>randomShuffle</code> без изменений и получить распределение случайной перестановки, просто вычислив функцию в монаде <code>DistBase</code>.</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; returnDistBase ::</span> a <span class="ot">-&gt;</span> <span class="dt">DistBase</span> a
 <span class="ot">&gt;</span> returnDistBase a <span class="fu">=</span> <span class="dt">DistBase</span> <span class="fu">$</span> Map.singleton a <span class="dv">1</span></code></pre>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; bindDistBase ::</span> <span class="dt">Ord</span> b <span class="ot">=&gt;</span> <span class="dt">DistBase</span> a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">DistBase</span> b) <span class="ot">-&gt;</span> <span class="dt">DistBase</span> b
@@ -153,11 +156,11 @@ ghci<span class="fu">&gt;</span> <span class="dv">1</span><span class="fu">/</sp
 <span class="ot">&gt;</span>     <span class="kw">where</span>
 <span class="ot">&gt;</span>       scale (dist,factor) <span class="fu">=</span> Map.map (<span class="fu">*</span>factor) <span class="fu">$</span>
 <span class="ot">&gt;</span>                             runDistBase dist</code></pre>
-<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Monad</span> <span class="dt">DistBase</span> <span class="kw">where</span>
-  return <span class="fu">=</span> returnDistBase
-  (<span class="fu">&gt;&gt;=</span>) <span class="fu">=</span> bindDistBase</code></pre>
-<p>Но не тут-то было, это невозможно! На возвращаемое в монаде значение должно быть наложено ограничение ‘Ord b’ - Data.Map требует его для постраения дерева поиска. В свою очередь, класс типов Monad не поддерживает никаких ораничений, переменные типа ‘a’ и ‘b’ в операторе (&gt;&gt;= :: m a -&gt; (a -&gt; m b) -&gt; m b) должны быть полиморфными, ни больше ни меньше. Подозреваю, что отчасти поэтому эта замечательная монада малоизвестна (как минимум, я не видел её ни в одном Haskell monad tutorial).</p>
-<p>Это известная в Haskell мире проблема называется “constrained monad problem” или “restricted monad”. Решена она может быть многими способами (которые легко гуглятся по этим ключевым словам), но наиболее простым и понятным мне показался подход, использованный в пакете set-monad [http://hackage.haskell.org/package/set-monad-0.1.0.0/docs/src/Data-Set-Monad.html#Set]:</p>
+<pre><code>instance Monad DistBase where
+  return = returnDistBase
+  (&gt;&gt;=) = bindDistBase</code></pre>
+<p>Но не тут-то было, это невозможно! На возвращаемое в монаде значение должно быть наложено ограничение <code>Ord b</code> - <code>Data.Map</code> требует его для постраения дерева поиска. В свою очередь, класс типов <code>Monad</code> не поддерживает никаких ораничений, переменные типа <code>a</code> и <code>b</code> в операторе (<code>&gt;&gt;= :: m a -&gt; (a -&gt; m b) -&gt; m b</code>) должны быть полиморфными, ни больше ни меньше. Подозреваю, что отчасти поэтому эта замечательная монада малоизвестна (как минимум, я не видел её ни в одном <em>Haskell monad tutorial</em>).</p>
+<p>Это известная в Haskell мире проблема называется <em>constrained monad problem</em> или <em>restricted monad</em>. Решена она может быть многими способами (которые легко гуглятся по этим ключевым словам), но наиболее простым и понятным мне показался подход, использованный в пакете <a href="http://hackage.haskell.org/package/set-monad-0.1.0.0/docs/src/Data-Set-Monad.html#Set">set-monad</a>:</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">Dist</span> a <span class="kw">where</span>
 <span class="ot">&gt;</span>   <span class="dt">Prim</span><span class="ot"> ::</span> <span class="dt">DistBase</span> a <span class="ot">-&gt;</span> <span class="dt">Dist</span> a
 <span class="ot">&gt;</span>   <span class="dt">Return</span><span class="ot"> ::</span> a <span class="ot">-&gt;</span> <span class="dt">Dist</span> a
@@ -176,7 +179,7 @@ ghci<span class="fu">&gt;</span> <span class="dv">1</span><span class="fu">/</sp
 <span class="ot">&gt;</span> runDist (<span class="dt">Bind</span> (<span class="dt">Prim</span> d) f) <span class="fu">=</span> bindDistBase d (runDist <span class="fu">.</span> f)
 <span class="ot">&gt;</span> runDist (<span class="dt">Bind</span> (<span class="dt">Return</span> a) f) <span class="fu">=</span> runDist <span class="fu">$</span> f a
 <span class="ot">&gt;</span> runDist (<span class="dt">Bind</span> (<span class="dt">Bind</span> d g) f) <span class="fu">=</span> runDist <span class="fu">$</span> <span class="dt">Bind</span> d <span class="fu">$</span> \a <span class="ot">-&gt;</span> <span class="dt">Bind</span> (g a) f</code></pre>
-<p>‘random’ в монаде Dist выдает все числа в заданном диапазоне с равной вероятностью:</p>
+<p><code>random</code> в монаде <code>Dist</code> выдает все числа в заданном диапазоне с равной вероятностью:</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Random</span> <span class="dt">Dist</span> <span class="kw">where</span>
 <span class="ot">&gt;</span>   random (lo,hi) <span class="fu">=</span>
 <span class="ot">&gt;</span>     <span class="kw">let</span> rangeSz <span class="fu">=</span> fromIntegral <span class="fu">$</span> hi<span class="fu">-</span>lo<span class="fu">+</span><span class="dv">1</span> <span class="kw">in</span>
@@ -186,32 +189,32 @@ ghci<span class="fu">&gt;</span> <span class="dv">1</span><span class="fu">/</sp
 <span class="ot">&gt;</span>           map (,<span class="dv">1</span><span class="fu">/</span>rangeSz) <span class="fu">$</span>
 <span class="ot">&gt;</span>             [lo<span class="fu">..</span>hi]</code></pre>
 <p>Посмотрим на распределение случайной перестановки списка длины 4:</p>
-<pre class="sourceCode haskell"><code class="sourceCode haskell">ghci<span class="fu">&gt;</span> print <span class="fu">$</span> runDist (randomShuffle [<span class="dv">1</span><span class="fu">..</span><span class="dv">4</span>])
-[<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>]<span class="fu">:</span> <span class="dv">1</span> <span class="fu">%</span> <span class="dv">24</span>
-[<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">4</span>,<span class="dv">3</span>]<span class="fu">:</span> <span class="dv">1</span> <span class="fu">%</span> <span class="dv">24</span>
-[<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">2</span>,<span class="dv">4</span>]<span class="fu">:</span> <span class="dv">1</span> <span class="fu">%</span> <span class="dv">24</span>
-[<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">2</span>]<span class="fu">:</span> <span class="dv">1</span> <span class="fu">%</span> <span class="dv">24</span>
-[<span class="dv">1</span>,<span class="dv">4</span>,<span class="dv">2</span>,<span class="dv">3</span>]<span class="fu">:</span> <span class="dv">1</span> <span class="fu">%</span> <span class="dv">24</span>
-[<span class="dv">1</span>,<span class="dv">4</span>,<span class="dv">3</span>,<span class="dv">2</span>]<span class="fu">:</span> <span class="dv">1</span> <span class="fu">%</span> <span class="dv">24</span>
-[<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">4</span>]<span class="fu">:</span> <span class="dv">1</span> <span class="fu">%</span> <span class="dv">24</span>
-[<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">4</span>,<span class="dv">3</span>]<span class="fu">:</span> <span class="dv">1</span> <span class="fu">%</span> <span class="dv">24</span>
-[<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">1</span>,<span class="dv">4</span>]<span class="fu">:</span> <span class="dv">1</span> <span class="fu">%</span> <span class="dv">24</span>
-[<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">1</span>]<span class="fu">:</span> <span class="dv">1</span> <span class="fu">%</span> <span class="dv">24</span>
-[<span class="dv">2</span>,<span class="dv">4</span>,<span class="dv">1</span>,<span class="dv">3</span>]<span class="fu">:</span> <span class="dv">1</span> <span class="fu">%</span> <span class="dv">24</span>
-[<span class="dv">2</span>,<span class="dv">4</span>,<span class="dv">3</span>,<span class="dv">1</span>]<span class="fu">:</span> <span class="dv">1</span> <span class="fu">%</span> <span class="dv">24</span>
-[<span class="dv">3</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">4</span>]<span class="fu">:</span> <span class="dv">1</span> <span class="fu">%</span> <span class="dv">24</span>
-[<span class="dv">3</span>,<span class="dv">1</span>,<span class="dv">4</span>,<span class="dv">2</span>]<span class="fu">:</span> <span class="dv">1</span> <span class="fu">%</span> <span class="dv">24</span>
-[<span class="dv">3</span>,<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">4</span>]<span class="fu">:</span> <span class="dv">1</span> <span class="fu">%</span> <span class="dv">24</span>
-[<span class="dv">3</span>,<span class="dv">2</span>,<span class="dv">4</span>,<span class="dv">1</span>]<span class="fu">:</span> <span class="dv">1</span> <span class="fu">%</span> <span class="dv">24</span>
-[<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">1</span>,<span class="dv">2</span>]<span class="fu">:</span> <span class="dv">1</span> <span class="fu">%</span> <span class="dv">24</span>
-[<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">2</span>,<span class="dv">1</span>]<span class="fu">:</span> <span class="dv">1</span> <span class="fu">%</span> <span class="dv">24</span>
-[<span class="dv">4</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>]<span class="fu">:</span> <span class="dv">1</span> <span class="fu">%</span> <span class="dv">24</span>
-[<span class="dv">4</span>,<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">2</span>]<span class="fu">:</span> <span class="dv">1</span> <span class="fu">%</span> <span class="dv">24</span>
-[<span class="dv">4</span>,<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">3</span>]<span class="fu">:</span> <span class="dv">1</span> <span class="fu">%</span> <span class="dv">24</span>
-[<span class="dv">4</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">1</span>]<span class="fu">:</span> <span class="dv">1</span> <span class="fu">%</span> <span class="dv">24</span>
-[<span class="dv">4</span>,<span class="dv">3</span>,<span class="dv">1</span>,<span class="dv">2</span>]<span class="fu">:</span> <span class="dv">1</span> <span class="fu">%</span> <span class="dv">24</span>
-[<span class="dv">4</span>,<span class="dv">3</span>,<span class="dv">2</span>,<span class="dv">1</span>]<span class="fu">:</span> <span class="dv">1</span> <span class="fu">%</span> <span class="dv">24</span></code></pre>
-<p>Да! Это именно то, что мы и ожидали. Алгоритм выдает равновероятную случайную перестановку из 24 (4!) возможных. И хотя мы можем быть уверенными в равномерности распределения только для ограниченного множества списков (n! растет черезчур быстро), этого достаточно, чтобы убедить меня в корректности алгоритма.</p>
+<pre><code>*Main&gt; print $ runDist (randomShuffle [1..4])
+[1,2,3,4]: 1 % 24
+[1,2,4,3]: 1 % 24
+[1,3,2,4]: 1 % 24
+[1,3,4,2]: 1 % 24
+[1,4,2,3]: 1 % 24
+[1,4,3,2]: 1 % 24
+[2,1,3,4]: 1 % 24
+[2,1,4,3]: 1 % 24
+[2,3,1,4]: 1 % 24
+[2,3,4,1]: 1 % 24
+[2,4,1,3]: 1 % 24
+[2,4,3,1]: 1 % 24
+[3,1,2,4]: 1 % 24
+[3,1,4,2]: 1 % 24
+[3,2,1,4]: 1 % 24
+[3,2,4,1]: 1 % 24
+[3,4,1,2]: 1 % 24
+[3,4,2,1]: 1 % 24
+[4,1,2,3]: 1 % 24
+[4,1,3,2]: 1 % 24
+[4,2,1,3]: 1 % 24
+[4,2,3,1]: 1 % 24
+[4,3,1,2]: 1 % 24
+[4,3,2,1]: 1 % 24</code></pre>
+<p>Да! Это именно то, что мы и ожидали. Алгоритм выдает равновероятную случайную перестановку из 24 (4!) возможных. И хотя мы можем быть уверенными в равномерности распределения только для ограниченного множества списков (<em>n!</em> растет черезчур быстро), этого достаточно, чтобы убедить меня в корректности алгоритма.</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; main ::</span> <span class="dt">IO</span> ()
 <span class="ot">&gt;</span> main <span class="fu">=</span> <span class="kw">do</span>
 <span class="ot">&gt;</span>   <span class="kw">let</span> ls <span class="fu">=</span> [<span class="dv">1</span><span class="fu">..</span><span class="dv">4</span>]

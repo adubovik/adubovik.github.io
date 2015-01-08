@@ -9,8 +9,9 @@ exceptions :: [String]
 exceptions =
   [ "hakyll"
   , ".gitignore"
-  , "CNAME"
   , ".git"
+  , "CNAME"
+  , "README.md"
   ]
 
 delete :: FilePath -> IO ()

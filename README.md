@@ -1,1 +1,1 @@
-[dubovik.info][dubovik.info]
+[dubovik.info](http://dubovik.info)

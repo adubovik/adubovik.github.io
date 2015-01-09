@@ -1,4 +1,4 @@
-module Deploy (main) where
+module Deploy (main, deploy) where
 
 import Control.Monad
 import Data.Functor
@@ -62,11 +62,15 @@ moveFiles src dst = do
     putStrLn $ srcFile ++ " ->\n  " ++ dstFile
     rename srcFile dstFile
 
+deploy :: FilePath -> IO ()
+deploy srcDir = do
+  let dstDir = srcDir </> ".." </> ".."
+  deleteFiles dstDir
+  moveFiles srcDir dstDir
+  putStrLn "Done."  
+  
 main :: IO ()
 main = do
   cdir <- getCurrentDirectory
   let srcDir = cdir </> "_site"
-      dstDir = cdir </> ".."
-  deleteFiles dstDir
-  moveFiles srcDir dstDir
-  putStrLn "Done."
+  deploy srcDir

@@ -3,11 +3,14 @@
 module Main (main) where
 
 import Data.Monoid
+import System.Exit
 
 import Hakyll
 
+import qualified Deploy as Deploy
+
 main :: IO ()
-main = hakyllWith defaultConfiguration $ do
+main = hakyllWith config $ do
 
   -- Copy images
   match "images/*" $ do
@@ -66,3 +69,14 @@ feedConfiguration = FeedConfiguration
   , feedAuthorEmail = "anton.dubovik@gmail.com"
   , feedRoot        = "http://dubovik.info"
   }
+
+config :: Configuration
+config = defaultConfiguration
+  { deploySite = deploy
+  }
+  where
+    deploy :: Configuration -> IO ExitCode
+    deploy conf = do
+      putStrLn "Deploying..."
+      Deploy.deploy $ destinationDirectory conf
+      return ExitSuccess

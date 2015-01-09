@@ -1,8 +1,5 @@
 all: build
 
-copyup: build
-	mv _site/* ..
-
 build: hakyll
 	./hakyll build
 

@@ -4,6 +4,8 @@ description: Tying the knot BFS
 date: Jan 1 2015
 ---
 
++++
+
 > {-# language
 >    RankNTypes
 >  #-}
@@ -13,22 +15,10 @@ date: Jan 1 2015
 > import Control.Arrow
 > import Debug.Trace
 
-> type Path a = [a]
-
-> data Tree a = Tree a [Tree a]
->   deriving (Show, Eq)
-
-> size :: Tree a -> Int
-> size (Tree _ ts) = 1 + sum (map size ts)
-
-> get :: Tree a -> a
-> get (Tree a _) = a
-
-> ch :: Tree a -> [Tree a]
-> ch (Tree _ ts) = ts
-
 > tracesFirst :: Eq a => a -> a
 > tracesFirst x = (x==x) `seq` x
+
++++
 
 Традиционно алгоритм обхода графа в ширину определяется с помощь очереди.
 Сначала в очередь добавляется корневая вершина. Потом из очереди извлекается
@@ -39,19 +29,28 @@ date: Jan 1 2015
 Для простоты я ограничился деревьями (для графов нужно поддерживать
 список посещенных вершин).
 
+> type Path a = [a]
+>
+> data Tree a = Tree a [Tree a]
+>   deriving (Show, Eq)
+>
+> get :: Tree a -> a
+> get (Tree a _) = a
+>
+> ch :: Tree a -> [Tree a]
+> ch (Tree _ ts) = ts
+
 > levelOrderQueue :: Tree a -> [Tree a]
 > levelOrderQueue t = go (enqueue t emptyQueue)
 >   where
-
-Функции для работы с очередью.
-
+>     -- Функции для работы с очередью.
 >     isEmpty            = null
 >     emptyQueue         = []
 >     dequeue            = head &&& tail
 >     enqueue x          = (++ [x])
 >     enqueueMany []     = id
 >     enqueueMany (x:xs) = enqueueMany xs . enqueue x
-
+>
 >     go q
 >       | isEmpty q = []
 >       | otherwise
@@ -104,7 +103,7 @@ date: Jan 1 2015
 >     dequeue            = head &&& (traceQ "dequeue" . tail)
 >     enqueueMany []     = id
 >     enqueueMany (x:xs) = enqueueMany xs . enqueue x
-
+>
 >     go q
 >       | isEmpty q = []
 >       | otherwise
@@ -184,6 +183,9 @@ dequeue              []
 > levelOrderCorecQueue' :: Tree a -> [Tree a]
 > levelOrderCorecQueue' t = take (size t)
 >                         $ levelOrderCorecQueue t
+>
+> size :: Tree a -> Int
+> size (Tree _ ts) = 1 + sum (map size ts)
 
 Однако, это не будет работать на бесконечных деревьях.
 Вычисление их размера займет бесконечно много времени.
@@ -210,6 +212,8 @@ dequeue              []
 Такая очередь называется корекурсивной очередью.
 Она описана в отличном туториале [Lloyd Allison’s Corecursive Queues: Why Continuations Matter][why-cont-matter], где также предложен способ оформить
 такую очередь в typeclass `MonadQueue` с функциями `enqueue` и `dequeue`.
+
++++
 
 > sampleTree :: Tree Int
 > sampleTree =
@@ -259,5 +263,7 @@ dequeue              []
 
 >   finTest "levelOrderCorecQueueCount" levelOrderCorecQueueCount
 >   infTest "levelOrderCorecQueueCount" levelOrderCorecQueueCount
+
++++
 
 [why-cont-matter]: http://www.melding-monads.com/files/CorecQueues.pdf

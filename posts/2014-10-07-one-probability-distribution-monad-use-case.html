@@ -34,19 +34,6 @@
 <h1 class="post_title">MergeSort and probability distribution monad</h1>
 <div class="post_date">posted on Oct 7, 2014</div>
 
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="co">{-# language</span>
-<span class="co">&gt;   ScopedTypeVariables</span>
-<span class="co">&gt; , TupleSections</span>
-<span class="co">&gt; , RankNTypes</span>
-<span class="co">&gt; , FlexibleInstances</span>
-<span class="co">&gt; , GADTs</span>
-<span class="co">&gt; #-}</span></code></pre>
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span></code></pre>
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">import qualified</span> <span class="dt">System.Random</span> <span class="kw">as</span> <span class="dt">Random</span>
-<span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Control.Arrow</span>
-<span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Control.Monad</span>
-<span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Control.Applicative</span>
-<span class="ot">&gt;</span> <span class="kw">import qualified</span> <span class="dt">Data.Map</span> <span class="kw">as</span> <span class="dt">Map</span></code></pre>
 <p>Недавно <a href="https://twitter.com/mah3iok">@MAH3IOK</a> поделился со мной интересным функциональным алгоритмом генерации случайной перестановки списка. Алгоритм примечательным образом схож с алгоритмом сортировки слиянием (на котором, кстати, основан <code>sort</code> из <a href="http://hackage.haskell.org/package/base-4.7.0.1/docs/src/Data-List.html#sort">Data.List</a>) и заключается в следующем:</p>
 <ol style="list-style-type: decimal">
 <li>исходный список превращается в список одноэлементных списков (<code>map (:[])</code>)</li>
@@ -75,8 +62,9 @@
 <span class="ot">&gt;</span>        rnd <span class="ot">&lt;-</span> random (<span class="dv">1</span>, nx<span class="fu">+</span>ny)
 <span class="ot">&gt;</span>        <span class="kw">if</span> rnd <span class="fu">&lt;=</span> nx
 <span class="ot">&gt;</span>        <span class="kw">then</span> (xh<span class="fu">:</span>) <span class="fu">&lt;$&gt;</span> runMerge (nx<span class="fu">-</span><span class="dv">1</span>) ny xt y
-<span class="ot">&gt;</span>        <span class="kw">else</span> (yh<span class="fu">:</span>) <span class="fu">&lt;$&gt;</span> runMerge  nx (ny<span class="fu">-</span><span class="dv">1</span>) x yt</code></pre>
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; tillSingletonM ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> ([a] <span class="ot">-&gt;</span> m [a]) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> m a
+<span class="ot">&gt;</span>        <span class="kw">else</span> (yh<span class="fu">:</span>) <span class="fu">&lt;$&gt;</span> runMerge  nx (ny<span class="fu">-</span><span class="dv">1</span>) x yt
+<span class="ot">&gt;</span> 
+<span class="ot">&gt; tillSingletonM ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> ([a] <span class="ot">-&gt;</span> m [a]) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> m a
 <span class="ot">&gt;</span> tillSingletonM f ls
 <span class="ot">&gt;</span>   <span class="fu">|</span> [x] <span class="ot">&lt;-</span> ls <span class="fu">=</span> return x
 <span class="ot">&gt;</span>   <span class="fu">|</span> otherwise <span class="fu">=</span> (f <span class="fu">&gt;=&gt;</span> tillSingletonM f) ls</code></pre>
@@ -137,16 +125,18 @@
 <p>Ок… Как насчет того, чтобы в моменте генерации случайного числа разделиться на две вселенные, в одной из которых выпала решка, а в другой - орел? При этом мы постраемся следить за накапливаемой вероятностью, т.е. вероятность выпадения решки будет домножена на вероятности последующих событий в этой вселенной (в точности по формуле условной вероятности). Тогда мы сможем получить не просто одну случайную перестановку, а распределение случайной перестановки, т.е. список возможных перестановок с вероятностью их генерации.</p>
 <p>И именно так работает вероятностная монада (см. например <a href="http://web.engr.oregonstate.edu/~erwig/papers/PFP_JFP06.pdf">Functional Pearls: Probabilistic Functional Programming in Haskell</a>)!</p>
 <p>Определим тип объекта, обозначающего распределение:</p>
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">newtype</span> <span class="dt">DistBase</span> a <span class="fu">=</span> <span class="dt">DistBase</span> {<span class="ot"> runDistBase ::</span> <span class="dt">Map.Map</span> a <span class="dt">Rational</span> }</code></pre>
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Show</span> a <span class="ot">=&gt;</span> <span class="dt">Show</span> (<span class="dt">DistBase</span> a) <span class="kw">where</span>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">newtype</span> <span class="dt">DistBase</span> a <span class="fu">=</span> <span class="dt">DistBase</span> {<span class="ot"> runDistBase ::</span> <span class="dt">Map.Map</span> a <span class="dt">Rational</span> }
+<span class="ot">&gt;</span> 
+<span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Show</span> a <span class="ot">=&gt;</span> <span class="dt">Show</span> (<span class="dt">DistBase</span> a) <span class="kw">where</span>
 <span class="ot">&gt;</span>   show (<span class="dt">DistBase</span> m) <span class="fu">=</span>
 <span class="ot">&gt;</span>     unlines <span class="fu">$</span>
 <span class="ot">&gt;</span>     map (\(x,y) <span class="ot">-&gt;</span> show x <span class="fu">++</span> <span class="st">&quot;: &quot;</span> <span class="fu">++</span> show y) <span class="fu">$</span>
 <span class="ot">&gt;</span>     Map.toList m</code></pre>
 <p>Попытаемся определить реализацию <code>Monad</code> и <code>Random</code> для <code>DistBase</code>, ведь нам хотелось бы оставить функцию <code>randomShuffle</code> без изменений и получить распределение случайной перестановки, просто вычислив функцию в монаде <code>DistBase</code>.</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; returnDistBase ::</span> a <span class="ot">-&gt;</span> <span class="dt">DistBase</span> a
-<span class="ot">&gt;</span> returnDistBase a <span class="fu">=</span> <span class="dt">DistBase</span> <span class="fu">$</span> Map.singleton a <span class="dv">1</span></code></pre>
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; bindDistBase ::</span> <span class="dt">Ord</span> b <span class="ot">=&gt;</span> <span class="dt">DistBase</span> a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">DistBase</span> b) <span class="ot">-&gt;</span> <span class="dt">DistBase</span> b
+<span class="ot">&gt;</span> returnDistBase a <span class="fu">=</span> <span class="dt">DistBase</span> <span class="fu">$</span> Map.singleton a <span class="dv">1</span>
+<span class="ot">&gt;</span> 
+<span class="ot">&gt; bindDistBase ::</span> <span class="dt">Ord</span> b <span class="ot">=&gt;</span> <span class="dt">DistBase</span> a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">DistBase</span> b) <span class="ot">-&gt;</span> <span class="dt">DistBase</span> b
 <span class="ot">&gt;</span> bindDistBase d f <span class="fu">=</span>
 <span class="ot">&gt;</span>     <span class="dt">DistBase</span> <span class="fu">$</span>
 <span class="ot">&gt;</span>       Map.unionsWith (<span class="fu">+</span>) <span class="fu">$</span>
@@ -164,16 +154,20 @@
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">Dist</span> a <span class="kw">where</span>
 <span class="ot">&gt;</span>   <span class="dt">Prim</span><span class="ot"> ::</span> <span class="dt">DistBase</span> a <span class="ot">-&gt;</span> <span class="dt">Dist</span> a
 <span class="ot">&gt;</span>   <span class="dt">Return</span><span class="ot"> ::</span> a <span class="ot">-&gt;</span> <span class="dt">Dist</span> a
-<span class="ot">&gt;</span>   <span class="dt">Bind</span><span class="ot"> ::</span> <span class="dt">Dist</span> a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">Dist</span> b) <span class="ot">-&gt;</span> <span class="dt">Dist</span> b</code></pre>
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Monad</span> <span class="dt">Dist</span> <span class="kw">where</span>
+<span class="ot">&gt;</span>   <span class="dt">Bind</span><span class="ot"> ::</span> <span class="dt">Dist</span> a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">Dist</span> b) <span class="ot">-&gt;</span> <span class="dt">Dist</span> b
+<span class="ot">&gt;</span> 
+<span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Monad</span> <span class="dt">Dist</span> <span class="kw">where</span>
 <span class="ot">&gt;</span>   return <span class="fu">=</span> <span class="dt">Return</span>
-<span class="ot">&gt;</span>   (<span class="fu">&gt;&gt;=</span>) <span class="fu">=</span> <span class="dt">Bind</span></code></pre>
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">Dist</span> <span class="kw">where</span>
-<span class="ot">&gt;</span>   fmap f x <span class="fu">=</span> x <span class="fu">&gt;&gt;=</span> (return <span class="fu">.</span> f)</code></pre>
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Applicative</span> <span class="dt">Dist</span> <span class="kw">where</span>
+<span class="ot">&gt;</span>   (<span class="fu">&gt;&gt;=</span>) <span class="fu">=</span> <span class="dt">Bind</span>
+<span class="ot">&gt;</span> 
+<span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">Dist</span> <span class="kw">where</span>
+<span class="ot">&gt;</span>   fmap f x <span class="fu">=</span> x <span class="fu">&gt;&gt;=</span> (return <span class="fu">.</span> f)
+<span class="ot">&gt;</span> 
+<span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Applicative</span> <span class="dt">Dist</span> <span class="kw">where</span>
 <span class="ot">&gt;</span>   pure <span class="fu">=</span> return
-<span class="ot">&gt;</span>   (<span class="fu">&lt;*&gt;</span>) <span class="fu">=</span> ap</code></pre>
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; runDist ::</span> <span class="dt">Ord</span> a <span class="ot">=&gt;</span> <span class="dt">Dist</span> a <span class="ot">-&gt;</span> <span class="dt">DistBase</span> a
+<span class="ot">&gt;</span>   (<span class="fu">&lt;*&gt;</span>) <span class="fu">=</span> ap
+<span class="ot">&gt;</span> 
+<span class="ot">&gt; runDist ::</span> <span class="dt">Ord</span> a <span class="ot">=&gt;</span> <span class="dt">Dist</span> a <span class="ot">-&gt;</span> <span class="dt">DistBase</span> a
 <span class="ot">&gt;</span> runDist (<span class="dt">Prim</span> d) <span class="fu">=</span> d
 <span class="ot">&gt;</span> runDist (<span class="dt">Return</span> a) <span class="fu">=</span> returnDistBase a
 <span class="ot">&gt;</span> runDist (<span class="dt">Bind</span> (<span class="dt">Prim</span> d) f) <span class="fu">=</span> bindDistBase d (runDist <span class="fu">.</span> f)
@@ -215,17 +209,6 @@
 [4,3,1,2]: 1 % 24
 [4,3,2,1]: 1 % 24</code></pre>
 <p>Да! Это именно то, что мы и ожидали. Алгоритм выдает равновероятную случайную перестановку из 24 (4!) возможных. И хотя мы можем быть уверенными в равномерности распределения только для ограниченного множества списков (<em>n!</em> растет черезчур быстро), этого достаточно, чтобы убедить меня в корректности алгоритма.</p>
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; main ::</span> <span class="dt">IO</span> ()
-<span class="ot">&gt;</span> main <span class="fu">=</span> <span class="kw">do</span>
-<span class="ot">&gt;</span>   <span class="kw">let</span> ls <span class="fu">=</span> [<span class="dv">1</span><span class="fu">..</span><span class="dv">4</span>]
-<span class="ot">&gt;</span>       n <span class="fu">=</span> <span class="dv">5</span>
-<span class="ot">&gt;</span> 
-<span class="ot">&gt;</span>   putStrLn <span class="st">&quot;Random permutations:&quot;</span>
-<span class="ot">&gt;</span>   replicateM_ n <span class="fu">$</span>
-<span class="ot">&gt;</span>     randomShuffle ls <span class="fu">&gt;&gt;=</span> print
-<span class="ot">&gt;</span> 
-<span class="ot">&gt;</span>   putStrLn <span class="st">&quot;Distribution of the random permutation:&quot;</span>
-<span class="ot">&gt;</span>   print <span class="fu">$</span> runDist (randomShuffle ls)</code></pre>
 
  <div id="disqus_thread"></div>
     <script type="text/javascript">

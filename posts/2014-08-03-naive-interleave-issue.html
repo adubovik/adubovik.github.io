@@ -34,7 +34,6 @@
 <h1 class="post_title">Недостатки наивной реализации interleave</h1>
 <div class="post_date">posted on 3 Aug 2014</div>
 
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="ot">{-# language TupleSections #-}</span></code></pre>
 <p>Требуется написать функцию с сигнатурой</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; interleave ::</span> [a] <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> [a]</code></pre>
 <p>которая возвращает список, образованный перемежением элементов исходных списков. Например:</p>
@@ -49,7 +48,8 @@
 <p>Всего три строки, где две отведены под очевидные базовые случаи. Что может быть проще? Однако, в этой реализации есть едва уловимый изъян - она черезчур строгая.</p>
 <pre><code>*Main&gt; take 3 $ interleave [1,2] (3:error &quot;Oops!&quot;)
 [1,3*** Exception: Oops!</code></pre>
-<p>Что произошло? Мы сопоставили с образцом <code>[]</code> список <code>error &quot;Oops!&quot;</code>, в то время как это было ненужно. Как это справить? Просто отложить сопоставление с паттерном для второго списка до тех пор, пока его элементы действительно не понадобятся.</p>
+<p>Что произошло? Мы сопоставили с образцом <code>[]</code> список <code>error &quot;Oops!&quot;</code>, в то время как это было ненужно.</p>
+<p>Как это справить? Просто отложить сопоставление с паттерном для второго списка до тех пор, пока его элементы действительно не понадобятся.</p>
 <pre><code>interleave' [] ys = ys
 interleave' (x:xs) ys = x : (
   case ys of

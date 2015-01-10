@@ -4,6 +4,8 @@ description: Решение интересной логической задач
 date: Oct 16, 2014
 ---
 
++++
+
 > {-# language RecordWildCards #-}
 
 > module LieToMe where
@@ -12,7 +14,9 @@ date: Oct 16, 2014
 > import Data.List
 > import Text.Printf
 
-Недавно услышал такую итересную логическую задачу:
++++
+
+Недавно услышал интересную логическую задачу:
 
 ~~~
 Есть три компьютера - A, B и С. Компьютеру можно задавать вопросы,
@@ -60,7 +64,7 @@ date: Oct 16, 2014
 
 > data ComputerKind = A | B | C deriving (Show,Eq)
 > data ComputerId = I1 | I2 | I3 deriving (Enum,Bounded)
-
+>
 > instance Show ComputerId where
 >   show I1 = "1"
 >   show I2 = "2"
@@ -95,6 +99,8 @@ date: Oct 16, 2014
 >               | And Question Question
 >               | Is ComputerId ComputerKind
 
++++
+
 > instance Show Question where
 >   showsPrec _ (Is cid kind)
 >     = showsPrec 0 cid
@@ -109,6 +115,8 @@ date: Oct 16, 2014
 >     . showString " | "
 >     . showsPrec 2 q2
 
++++
+
 В-третьих, как выбрать компьютер?
 В зависимости от данного ответа - "да" или "нет", выбрать один
 из трех компьютеров. Всего таких стратегий 3*3=9.
@@ -116,7 +124,7 @@ date: Oct 16, 2014
 > data Strategy = Strategy { ifTrue  :: ComputerId
 >                          , ifFalse :: ComputerId
 >                          }
-
+>
 > instance Show Strategy where
 >   show Strategy{..} = printf
 >                         "Yes ? %s : %s"
@@ -131,7 +139,7 @@ date: Oct 16, 2014
 >                    , i3 :: ComputerKind
 >                    }
 >   deriving Show
-
+>
 > worlds :: [World]
 > worlds = map mkWorld $ permutations [A,B,C]
 >   where
@@ -159,7 +167,7 @@ date: Oct 16, 2014
 >       [ Is cid (getKind cid world)
 >       | cid <- [minBound..maxBound]
 >       ]      
-
+>
 > getKind :: ComputerId -> World -> ComputerKind
 > getKind I1 = i1
 > getKind I2 = i2
@@ -226,7 +234,7 @@ date: Oct 16, 2014
 >   s <- strategies
 >   guard (check q s)
 >   return (q,s)
-
+>
 > main :: IO ()
 > main = do
 >   let showSolution (question,strategy) =

@@ -34,12 +34,7 @@
 <h1 class="post_title">Lie to me</h1>
 <div class="post_date">posted on Oct 16, 2014</div>
 
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="ot">{-# language RecordWildCards #-}</span></code></pre>
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">module</span> <span class="dt">LieToMe</span> <span class="kw">where</span></code></pre>
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Control.Monad</span>
-<span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Data.List</span>
-<span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Text.Printf</span></code></pre>
-<p>Недавно услышал такую итересную логическую задачу:</p>
+<p>Недавно услышал итересную логическую задачу:</p>
 <pre><code>Есть три компьютера - A, B и С. Компьютеру можно задавать вопросы,
 на которые он отвечает &quot;да&quot; или &quot;нет&quot;. Известно, что
 
@@ -66,8 +61,9 @@
 <p>С чего же начать поиск решения?</p>
 <p>Во-первых, кому задать вопрос? Без потери общности положим, что вопрос всегда задаётся первому компьютеру.</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">ComputerKind</span> <span class="fu">=</span> <span class="dt">A</span> <span class="fu">|</span> <span class="dt">B</span> <span class="fu">|</span> <span class="dt">C</span> <span class="kw">deriving</span> (<span class="dt">Show</span>,<span class="dt">Eq</span>)
-<span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">ComputerId</span> <span class="fu">=</span> <span class="dt">I1</span> <span class="fu">|</span> <span class="dt">I2</span> <span class="fu">|</span> <span class="dt">I3</span> <span class="kw">deriving</span> (<span class="dt">Enum</span>,<span class="dt">Bounded</span>)</code></pre>
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Show</span> <span class="dt">ComputerId</span> <span class="kw">where</span>
+<span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">ComputerId</span> <span class="fu">=</span> <span class="dt">I1</span> <span class="fu">|</span> <span class="dt">I2</span> <span class="fu">|</span> <span class="dt">I3</span> <span class="kw">deriving</span> (<span class="dt">Enum</span>,<span class="dt">Bounded</span>)
+<span class="ot">&gt;</span> 
+<span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Show</span> <span class="dt">ComputerId</span> <span class="kw">where</span>
 <span class="ot">&gt;</span>   show <span class="dt">I1</span> <span class="fu">=</span> <span class="st">&quot;1&quot;</span>
 <span class="ot">&gt;</span>   show <span class="dt">I2</span> <span class="fu">=</span> <span class="st">&quot;2&quot;</span>
 <span class="ot">&gt;</span>   show <span class="dt">I3</span> <span class="fu">=</span> <span class="st">&quot;3&quot;</span></code></pre>
@@ -80,24 +76,12 @@
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">Question</span> <span class="fu">=</span> <span class="dt">Or</span>  <span class="dt">Question</span> <span class="dt">Question</span>
 <span class="ot">&gt;</span>               <span class="fu">|</span> <span class="dt">And</span> <span class="dt">Question</span> <span class="dt">Question</span>
 <span class="ot">&gt;</span>               <span class="fu">|</span> <span class="dt">Is</span> <span class="dt">ComputerId</span> <span class="dt">ComputerKind</span></code></pre>
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Show</span> <span class="dt">Question</span> <span class="kw">where</span>
-<span class="ot">&gt;</span>   showsPrec _ (<span class="dt">Is</span> cid kind)
-<span class="ot">&gt;</span>     <span class="fu">=</span> showsPrec <span class="dv">0</span> cid
-<span class="ot">&gt;</span>     <span class="fu">.</span> showString <span class="st">&quot;==&quot;</span>
-<span class="ot">&gt;</span>     <span class="fu">.</span> showsPrec <span class="dv">0</span> kind
-<span class="ot">&gt;</span>   showsPrec _ (<span class="dt">And</span> q1 q2)
-<span class="ot">&gt;</span>     <span class="fu">=</span> showsPrec <span class="dv">3</span> q1
-<span class="ot">&gt;</span>     <span class="fu">.</span> showString <span class="st">&quot;&amp;&quot;</span>
-<span class="ot">&gt;</span>     <span class="fu">.</span> showsPrec <span class="dv">3</span> q2
-<span class="ot">&gt;</span>   showsPrec p (<span class="dt">Or</span> q1 q2) <span class="fu">=</span> showParen (p <span class="fu">&gt;</span> <span class="dv">2</span>)
-<span class="ot">&gt;</span>     <span class="fu">$</span> showsPrec <span class="dv">2</span> q1
-<span class="ot">&gt;</span>     <span class="fu">.</span> showString <span class="st">&quot; | &quot;</span>
-<span class="ot">&gt;</span>     <span class="fu">.</span> showsPrec <span class="dv">2</span> q2</code></pre>
 <p>В-третьих, как выбрать компьютер? В зависимости от данного ответа - “да” или “нет”, выбрать один из трех компьютеров. Всего таких стратегий 3*3=9.</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">Strategy</span> <span class="fu">=</span> <span class="dt">Strategy</span> {<span class="ot"> ifTrue  ::</span> <span class="dt">ComputerId</span>
 <span class="ot">&gt;</span>                          ,<span class="ot"> ifFalse ::</span> <span class="dt">ComputerId</span>
-<span class="ot">&gt;</span>                          }</code></pre>
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Show</span> <span class="dt">Strategy</span> <span class="kw">where</span>
+<span class="ot">&gt;</span>                          }
+<span class="ot">&gt;</span> 
+<span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Show</span> <span class="dt">Strategy</span> <span class="kw">where</span>
 <span class="ot">&gt;</span>   show <span class="dt">Strategy</span>{<span class="fu">..</span>} <span class="fu">=</span> printf
 <span class="ot">&gt;</span>                         <span class="st">&quot;Yes ? %s : %s&quot;</span>
 <span class="ot">&gt;</span>                         (show ifTrue)
@@ -107,8 +91,9 @@
 <span class="ot">&gt;</span>                    ,<span class="ot"> i2 ::</span> <span class="dt">ComputerKind</span>
 <span class="ot">&gt;</span>                    ,<span class="ot"> i3 ::</span> <span class="dt">ComputerKind</span>
 <span class="ot">&gt;</span>                    }
-<span class="ot">&gt;</span>   <span class="kw">deriving</span> <span class="dt">Show</span></code></pre>
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; worlds ::</span> [<span class="dt">World</span>]
+<span class="ot">&gt;</span>   <span class="kw">deriving</span> <span class="dt">Show</span>
+<span class="ot">&gt;</span> 
+<span class="ot">&gt; worlds ::</span> [<span class="dt">World</span>]
 <span class="ot">&gt;</span> worlds <span class="fu">=</span> map mkWorld <span class="fu">$</span> permutations [<span class="dt">A</span>,<span class="dt">B</span>,<span class="dt">C</span>]
 <span class="ot">&gt;</span>   <span class="kw">where</span>
 <span class="ot">&gt;</span>     mkWorld [i1,i2,i3] <span class="fu">=</span> <span class="dt">World</span>{<span class="fu">..</span>}
@@ -131,8 +116,9 @@
 <span class="ot">&gt;</span>       foldr1 <span class="dt">And</span>
 <span class="ot">&gt;</span>       [ <span class="dt">Is</span> cid (getKind cid world)
 <span class="ot">&gt;</span>       <span class="fu">|</span> cid <span class="ot">&lt;-</span> [minBound<span class="fu">..</span>maxBound]
-<span class="ot">&gt;</span>       ]      </code></pre>
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; getKind ::</span> <span class="dt">ComputerId</span> <span class="ot">-&gt;</span> <span class="dt">World</span> <span class="ot">-&gt;</span> <span class="dt">ComputerKind</span>
+<span class="ot">&gt;</span>       ]      
+<span class="ot">&gt;</span> 
+<span class="ot">&gt; getKind ::</span> <span class="dt">ComputerId</span> <span class="ot">-&gt;</span> <span class="dt">World</span> <span class="ot">-&gt;</span> <span class="dt">ComputerKind</span>
 <span class="ot">&gt;</span> getKind <span class="dt">I1</span> <span class="fu">=</span> i1
 <span class="ot">&gt;</span> getKind <span class="dt">I2</span> <span class="fu">=</span> i2
 <span class="ot">&gt;</span> getKind <span class="dt">I3</span> <span class="fu">=</span> i3</code></pre>
@@ -177,8 +163,9 @@
 <span class="ot">&gt;</span>   q <span class="ot">&lt;-</span> questions
 <span class="ot">&gt;</span>   s <span class="ot">&lt;-</span> strategies
 <span class="ot">&gt;</span>   guard (check q s)
-<span class="ot">&gt;</span>   return (q,s)</code></pre>
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; main ::</span> <span class="dt">IO</span> ()
+<span class="ot">&gt;</span>   return (q,s)
+<span class="ot">&gt;</span> 
+<span class="ot">&gt; main ::</span> <span class="dt">IO</span> ()
 <span class="ot">&gt;</span> main <span class="fu">=</span> <span class="kw">do</span>
 <span class="ot">&gt;</span>   <span class="kw">let</span> showSolution (question,strategy) <span class="fu">=</span>
 <span class="ot">&gt;</span>         show strategy <span class="fu">++</span> <span class="st">&quot; &lt;== &quot;</span> <span class="fu">++</span> show question <span class="fu">++</span> <span class="st">&quot; ?&quot;</span>

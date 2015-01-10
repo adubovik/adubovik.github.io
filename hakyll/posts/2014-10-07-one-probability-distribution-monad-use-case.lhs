@@ -4,6 +4,8 @@ description: MergeSort and probability distribution monad
 date: Oct 7, 2014
 ---
 
++++
+
 > {-# language
 >   ScopedTypeVariables
 > , TupleSections
@@ -19,6 +21,8 @@ date: Oct 7, 2014
 > import Control.Monad
 > import Control.Applicative
 > import qualified Data.Map as Map
+
++++
 
 Недавно [\@MAH3IOK][manzyuk_twitter] поделился со мной интересным функциональным
 алгоритмом генерации случайной перестановки списка.
@@ -63,7 +67,7 @@ date: Oct 7, 2014
 >        if rnd <= nx
 >        then (xh:) <$> runMerge (nx-1) ny xt y
 >        else (yh:) <$> runMerge  nx (ny-1) x yt
-
+>
 > tillSingletonM :: Monad m => ([a] -> m [a]) -> [a] -> m a
 > tillSingletonM f ls
 >   | [x] <- ls = return x
@@ -163,7 +167,7 @@ date: Oct 7, 2014
 Определим тип объекта, обозначающего распределение:
 
 > newtype DistBase a = DistBase { runDistBase :: Map.Map a Rational }
-
+>
 > instance Show a => Show (DistBase a) where
 >   show (DistBase m) =
 >     unlines $
@@ -176,7 +180,7 @@ date: Oct 7, 2014
 
 > returnDistBase :: a -> DistBase a
 > returnDistBase a = DistBase $ Map.singleton a 1
-
+>
 > bindDistBase :: Ord b => DistBase a -> (a -> DistBase b) -> DistBase b
 > bindDistBase d f =
 >     DistBase $
@@ -214,18 +218,18 @@ instance Monad DistBase where
 >   Prim :: DistBase a -> Dist a
 >   Return :: a -> Dist a
 >   Bind :: Dist a -> (a -> Dist b) -> Dist b
-
+>
 > instance Monad Dist where
 >   return = Return
 >   (>>=) = Bind
-
+>
 > instance Functor Dist where
 >   fmap f x = x >>= (return . f)
-
+>
 > instance Applicative Dist where
 >   pure = return
 >   (<*>) = ap
-
+>
 > runDist :: Ord a => Dist a -> DistBase a
 > runDist (Prim d) = d
 > runDist (Return a) = returnDistBase a
@@ -281,6 +285,8 @@ instance Monad DistBase where
 для ограниченного множества списков (_n!_ растет черезчур быстро),
 этого достаточно, чтобы убедить меня в корректности алгоритма.
 
++++
+
 > main :: IO ()
 > main = do
 >   let ls = [1..4]
@@ -292,6 +298,8 @@ instance Monad DistBase where
 >
 >   putStrLn "Distribution of the random permutation:"
 >   print $ runDist (randomShuffle ls)
+
++++
 
 [manzyuk_twitter]: https://twitter.com/mah3iok
 [data.list]: http://hackage.haskell.org/package/base-4.7.0.1/docs/src/Data-List.html#sort

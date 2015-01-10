@@ -8,6 +8,7 @@ import System.Exit
 import Hakyll
 
 import qualified Deploy as Deploy
+import Preprocess
 
 main :: IO ()
 main = hakyllWith config $ do
@@ -30,7 +31,7 @@ main = hakyllWith config $ do
   -- Posts
   match "posts/*" $ do
     route $ setExtension ".html"
-    compile $ pandocCompiler
+    compile $ pandocCompilerWithPreprocess mdPreprocess
        >>= loadAndApplyTemplate "templates/post.html" defaultContext
        >>= loadAndApplyTemplate "templates/default.html" defaultContext
        >>= relativizeUrls
@@ -80,3 +81,13 @@ config = defaultConfiguration
       putStrLn "Deploying..."
       Deploy.deploy $ destinationDirectory conf
       return ExitSuccess
+
+pandocCompilerWithPreprocess
+  :: (String -> String)
+  -> Compiler (Item String)
+pandocCompilerWithPreprocess preproc = do
+  item <- getResourceBody
+  item' <- withItemBody (return . preproc) item
+  let pandoc = readPandocWith defaultHakyllReaderOptions item'
+  let html = writePandocWith defaultHakyllWriterOptions pandoc
+  return html

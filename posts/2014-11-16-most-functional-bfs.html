@@ -34,15 +34,7 @@
 <h1 class="post_title">Most functional BFS</h1>
 <div class="post_date">posted on Nov 16, 2014</div>
 
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="co">{-# language</span>
-<span class="co">&gt;    RankNTypes</span>
-<span class="co">&gt;  , RecordWildCards</span>
-<span class="co">&gt;  , DeriveFunctor</span>
-<span class="co">&gt;  #-}</span>
-<span class="ot">&gt;</span> 
-<span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Data.List</span>
-<span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Control.Monad</span></code></pre>
-<p>Недавно мы с коллегами в ожидании митинга обсуждали интересную реализацию алгоритма обхода графа в ширину, которая была описана в <a href="http://monadmadness.wordpress.com/2014/11/10/purely-functional-graph-search-algorithms/">блогпосте</a>.</p>
+<p>Недавно мы с коллегами в ожидании митинга обсуждали интересную реализацию алгоритма обхода графа в ширину, которая была описана в блогпосте <a href="http://monadmadness.wordpress.com/2014/11/10/purely-functional-graph-search-algorithms/">Purely Functional: Graph Search Algorithms</a>.</p>
 <p>Самым интересным в описанном алгоритме было то, что он непохож на стандартные реализации bfs, которые используют очередь, калькируя bfs в императивном сеттинге.</p>
 <p>Граф представляется следующим типом:</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">Graph</span> a <span class="fu">=</span> <span class="dt">Node</span> a [<span class="dt">Graph</span> a] <span class="kw">deriving</span> (<span class="dt">Functor</span>, <span class="dt">Show</span>)
@@ -201,19 +193,15 @@
 <span class="ot">&gt;</span>     go gs <span class="fu">=</span> gs <span class="fu">++</span> go (concatMap children gs)</code></pre>
 <p>соответственно.</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; get ::</span> <span class="dt">Graph</span> a <span class="ot">-&gt;</span> a
-<span class="ot">&gt;</span> get (<span class="dt">Node</span> a _) <span class="fu">=</span> a</code></pre>
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; children ::</span> <span class="dt">Graph</span> a <span class="ot">-&gt;</span> [<span class="dt">Graph</span> a]
+<span class="ot">&gt;</span> get (<span class="dt">Node</span> a _) <span class="fu">=</span> a
+<span class="ot">&gt;</span> 
+<span class="ot">&gt; children ::</span> <span class="dt">Graph</span> a <span class="ot">-&gt;</span> [<span class="dt">Graph</span> a]
 <span class="ot">&gt;</span> children (<span class="dt">Node</span> _ gs) <span class="fu">=</span> gs</code></pre>
 <p><code>bfsPaths''</code> получается их композицией и извлечением корневого пути из каждого дерева:</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; bfsPaths'' ::</span> <span class="dt">Graph</span> a <span class="ot">-&gt;</span> [<span class="dt">Path</span> a]
 <span class="ot">&gt;</span> bfsPaths'' <span class="fu">=</span> map get <span class="fu">.</span> levelOrder <span class="fu">.</span> pathsGraph</code></pre>
 <pre><code>*Main&gt; take 3 $ bfsPaths'' $ binTreeInf
 [[1],[2,1],[3,1]]</code></pre>
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; main ::</span> <span class="dt">IO</span> ()
-<span class="ot">&gt;</span> main <span class="fu">=</span> <span class="kw">do</span>
-<span class="ot">&gt;</span>   <span class="kw">let</span> algos <span class="fu">=</span> [bfsOrig, bfsPaths, bfsPaths', bfsPaths'']
-<span class="ot">&gt;</span>   forM_ algos <span class="fu">$</span> \algo <span class="ot">-&gt;</span> 
-<span class="ot">&gt;</span>     print <span class="fu">.</span> take <span class="dv">3</span> <span class="fu">.</span> algo <span class="fu">$</span> binTreeInf</code></pre>
 
  <div id="disqus_thread"></div>
     <script type="text/javascript">

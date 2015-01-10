@@ -4,6 +4,8 @@ description: Most functional BFS
 date: Nov 16, 2014
 ---
 
++++
+
 > {-# language
 >    RankNTypes
 >  , RecordWildCards
@@ -13,8 +15,10 @@ date: Nov 16, 2014
 > import Data.List
 > import Control.Monad
 
++++
+
 Недавно мы с коллегами в ожидании митинга обсуждали интересную
-реализацию алгоритма обхода графа в ширину, которая была описана в [блогпосте][purely-functional-bfs].
+реализацию алгоритма обхода графа в ширину, которая была описана в блогпосте [Purely Functional: Graph Search Algorithms][purely-functional-graph-search-algos].
 
 Самым интересным в описанном алгоритме было то, что он непохож
 на стандартные реализации bfs, которые используют очередь,
@@ -302,7 +306,7 @@ UPD 28 Dec 2014
 
 > get :: Graph a -> a
 > get (Node a _) = a
-
+>
 > children :: Graph a -> [Graph a]
 > children (Node _ gs) = gs
 
@@ -317,11 +321,15 @@ UPD 28 Dec 2014
 [[1],[2,1],[3,1]]
 ~~~
 
++++
+
 > main :: IO ()
 > main = do
 >   let algos = [bfsOrig, bfsPaths, bfsPaths', bfsPaths'']
 >   forM_ algos $ \algo -> 
 >     print . take 3 . algo $ binTreeInf
 
-[purely-functional-bfs]: http://monadmadness.wordpress.com/2014/11/10/purely-functional-graph-search-algorithms/
++++
+
+[purely-functional-graph-search-algos]: http://monadmadness.wordpress.com/2014/11/10/purely-functional-graph-search-algorithms/
 [transpose]: http://hackage.haskell.org/package/base-4.7.0.2/docs/src/Data-List.html#transpose

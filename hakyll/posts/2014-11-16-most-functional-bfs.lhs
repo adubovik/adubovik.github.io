@@ -18,7 +18,8 @@ date: Nov 16, 2014
 +++
 
 Недавно мы с коллегами в ожидании митинга обсуждали интересную
-реализацию алгоритма обхода графа в ширину, которая была описана в блогпосте [Purely Functional: Graph Search Algorithms][purely-functional-graph-search-algos].
+реализацию алгоритма обхода графа в ширину, которая была описана в блогпосте
+[Purely Functional: Graph Search Algorithms][purely-functional-graph-search-algos].
 
 Самым интересным в описанном алгоритме было то, что он непохож
 на стандартные реализации bfs, которые используют очередь,

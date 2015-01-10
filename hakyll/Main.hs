@@ -3,7 +3,10 @@
 module Main (main) where
 
 import Data.Monoid
+import Text.Printf
+
 import System.Exit
+import System.FilePath.Posix
 
 import Hakyll
 
@@ -31,10 +34,16 @@ main = hakyllWith config $ do
   -- Posts
   match "posts/*" $ do
     route $ setExtension ".html"
-    compile $ pandocCompilerWithPreprocess mdPreprocess
-       >>= loadAndApplyTemplate "templates/post.html" defaultContext
-       >>= loadAndApplyTemplate "templates/default.html" defaultContext
-       >>= relativizeUrls
+    compile $ do
+      lhsUrl <- getLhsUrl
+
+      let postCtx = constField "lhs_url" lhsUrl
+                  <> defaultContext
+
+      pandocCompilerWithPreprocess mdPreprocess
+        >>= loadAndApplyTemplate "templates/post.html" postCtx
+        >>= loadAndApplyTemplate "templates/default.html" defaultContext
+        >>= relativizeUrls
 
   -- Render posts list
   create ["index.html"] $ do
@@ -91,3 +100,19 @@ pandocCompilerWithPreprocess preproc = do
   let pandoc = readPandocWith defaultHakyllReaderOptions item'
   let html = writePandocWith defaultHakyllWriterOptions pandoc
   return html
+
+rawGithubUrl :: String
+rawGithubUrl =
+  "https://raw.githubusercontent.com/adubovik/adubovik.github.io/master/hakyll"
+
+getLhsUrl :: Compiler String
+getLhsUrl = do
+  filePath <- getResourceFilePath
+  ext <- getUnderlyingExtension
+
+  case ext of
+    ".lhs" -> do
+      let link = rawGithubUrl </> filePath
+      return $ printf "<a href=%s>Literate Haskell source code</a>" link
+    _      ->
+      return ""

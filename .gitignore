@@ -2,6 +2,7 @@
 *.hi
 *.o
 *.exe
+*.bat
 src/_site/
 src/_cache/
 unpublished/

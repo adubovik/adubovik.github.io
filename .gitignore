@@ -1,7 +1,7 @@
 *~
-unpublished/
 *.hi
 *.o
 *.exe
 src/_site/
 src/_cache/
+unpublished/

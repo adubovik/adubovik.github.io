@@ -18,12 +18,12 @@ main = hakyllWith config $ do
 
   -- Copy images
   match "images/*" $ do
-    route $ gsubRoute "^images" (const "static")
+    route idRoute
     compile copyFileCompiler
 
   -- Compress CSS
   match "css/*" $ do
-    route $ gsubRoute "^css" (const "static")
+    route idRoute
     compile copyFileCompiler
 
   -- Copy JS

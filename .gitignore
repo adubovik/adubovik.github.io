@@ -3,6 +3,5 @@ unpublished/
 *.hi
 *.o
 *.exe
-hakyll/hakyll*
-hakyll/_site/
-hakyll/_cache/
+src/_site/
+src/_cache/

@@ -7,7 +7,7 @@ import System.FilePath.Posix
 
 exceptions :: [String]
 exceptions =
-  [ "hakyll"
+  [ "src"
   , ".gitignore"
   , ".git"
   , "CNAME"

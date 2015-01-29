@@ -103,7 +103,7 @@ pandocCompilerWithPreprocess preproc = do
 
 rawGithubUrl :: String
 rawGithubUrl =
-  "https://raw.githubusercontent.com/adubovik/adubovik.github.io/master/hakyll"
+  "https://raw.githubusercontent.com/adubovik/adubovik.github.io/master/src"
 
 getLhsUrl :: Compiler String
 getLhsUrl = do
@@ -112,7 +112,11 @@ getLhsUrl = do
 
   case ext of
     ".lhs" -> do
-      let link = rawGithubUrl </> filePath
+      let link = rawGithubUrl </> truncateFilePath filePath
       return $ printf "<a href=%s>Literate Haskell source code</a>" link
     _      ->
       return ""
+
+truncateFilePath :: FilePath -> FilePath
+truncateFilePath ('.':'\\':rest) = rest
+truncateFilePath x = x
